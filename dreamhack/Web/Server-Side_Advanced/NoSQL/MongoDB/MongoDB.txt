@@ -1,0 +1,104 @@
+NoSQL - MongoDB :
+    MongoDB는 key-value의 쌍을 가지는 JSON objects 형태인 도큐먼트를 저장합니다.
+
+    MongoDB는 아래와 같은 큰 특징을 가지고 있습니다.
+        - Schema가 존재하지 않아 각 테이블(MongoDB에선 Collection)에 대한 특별한 정의를 하지 않아도 됩니다.
+        - JSON 형식으로 쿼리를 작성할 수 있습니다.
+        - _id필드가 Primary Key 역할을 합니다.
+
+    ex)
+        $ mongo // mongoDB Shell 실행 (localhost:27017 몽고서버로 연결)
+        > db.user.insert({uid: 'admin', upw: 'secretpassword'})
+        WriteResult({ "nInserted" : 1 })
+        > db.user.find({uid: 'admin'})
+        { "_id" : ObjectId("5e71d395b050a2511caa827d"), "uid" : "admin", "upw" : "secretpassword" }
+
+    RDBMS에서 status의 값이 "A"이며, qty의 값이 30 보다 작은 데이터를 찾기 위해서는 아래와 같은 SQL쿼리를 사용합니다.
+    ex)
+        SELECT * FROM inventory WHERE status = "A" and qty < 30;
+
+    MongoDB에서는 아래와 같이 쿼리를 사용합니다.
+    ex)
+        db.inventory.find( { $and: [ { status: "A" }, { qty: { $lt: 30 } } ] } )
+
+    JSON 안에 $를 붙여서 연산자를 사용할 수 있습니다. 
+    밑은 사용 가능한 연산자의 리스트입니다.
+
+    Query Operator 표 (https://docs.mongodb.com/manual/reference/operator/query/)
+
+Comparison :
+    Name        Description
+
+    $eq     지정된 값과 같은 값을 찾습니다. (equal)
+
+    $gt     지정된 값보다 큰 값을 찾습니다. (greater than)
+
+    $gte    지정된 값보다 크거나 같은 값을 찾습니다. (greater than equal)
+
+    $in     배열 안의 값들과 일치하는 값을 찾습니다. (in)
+
+    $lt     지정된 값보다 작은 값을 찾습니다. (less than)
+
+    $lte    지정된 값보다 작거나 같은 값을 찾습니다. (less than equal)
+
+    $ne     지정된 값과 같지 않은 값을 찾습니다. (not equal)
+
+    $nin    배열 안의 값들과 일치하지 않는 값을 찾습니다. (not in)
+
+Logical :
+    Name        Description
+
+    $and    논리적 AND, 각각의 쿼리를 모두 만족하는 문서가 반환됩니다.
+
+    $not    쿼리 식의 효과를 반전시킵니다. 쿼리 식과 일치하지 않는 문서를 반환합니다.
+
+    $nor    논리적 NOR, 각각의 쿼리를 모두 만족하지 않는 문서가 반환됩니다.
+
+    $or     논리적 OR, 각각의 쿼리 중 하나 이상 만족하는 문서가 반환됩니다.
+
+Element :
+    Name            Description
+
+    $exists     지정된 필드가 있는 문서를 찾습니다.
+
+    $type       지정된 필드가 지정된 유형인 문서를 선택합니다.
+
+Evaluation :
+    Name                Description
+
+    $expr           쿼리 언어 내에서 집계 식을 사용할 수 있습니다.
+
+    $jsonSchema     주어진 JSON 스키마에 대해 문서를 검증합니다.
+
+    $mod            필드 값에 대해 mod 연산을 수행하고 지정된 결과를 가진 문서를 선택합니다.
+
+    $regex          지정된 정규식과 일치하는 문서를 선택합니다.
+
+    $text           지정된 텍스트를 검색합니다.
+
+    $where          지정된 JavaScript 식을 만족하는 문서와 일치합니다.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

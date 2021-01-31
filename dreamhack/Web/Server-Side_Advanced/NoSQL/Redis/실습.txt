@@ -1,0 +1,127 @@
+Redis 실습 :
+
+오른쪽 탭의 코드를 보고 아래의 실습에서 인증(email_verify)과정을 완료해 "Epilogue-Review Quiz"의 정답인 FLAG를 획득해 보시기 바랍니다.
+
+Psuedo Code :
+    from flask import *
+    import random, os, redis
+    import FLAG
+    
+    app = Flask(__name__)
+    app.secret_key = os.urandom(32)
+    DEV_MODE = True
+    REDIS_HOST = '127.0.0.1'
+    conn = redis.Redis(host=REDIS_HOST, charset='utf-8', decode_responses=True)
+    
+    @app.route('/email_send', methods=['GET', 'POST'])
+    def email_send():
+        if request.method == 'GET':
+            return render_template('email_send.html')
+        
+        elif request.method == 'POST':
+            email = request.form.get('email', '')
+            rand = f'{random.randint(0, 999999):06d}'
+            if DEV_MODE or send_mail(email, rand):  # if DEV_MODE disable send_mail
+                conn.set(email, rand)
+                conn.set(f'{email}_count', '0')
+                return 'send_mail'
+            else:
+                return 'Fail send_mail'
+    
+    @app.route('/email_verify', methods=['POST'])
+    def email_verify():
+        email = request.form.get('email', '')
+        auth_code = request.form.get('auth_code', '')
+        if conn.get(email) == auth_code:
+            conn.delete(email)
+            # Verify OK !
+            return f'Success, Flag is {FLAG.FLAG}'
+        
+        conn.incr(f'{email}_count')
+        count = int(conn.get(f'{email}_count'))
+        if count > 5:
+            return 'Limit'
+        return 'Fail'
+    
+    app.run(host='0.0.0.0', port=5000, threaded=True)
+
+Input :
+    Reset 버튼, email :
+
+    Home 버튼, 이메일 전송 버튼, 이메일 인증 버튼
+
+    이메일 인증 성공 시 FLAG를 획득 할 수 있습니다.
+
+이메일 전송 페이지
+
+    email 인증번호 전송
+    이메일 주소 :
+        이메일을 입력하세요
+
+    제출 버튼
+
+이메일 인증 페이지
+
+    email 인증번호 확인
+    이메일 주소 :
+        이메일을 입력하세요
+    인증 번호 :
+        인증 번호를 입력하세요
+
+    제출 버튼
+
+답 :
+    이메일 전송 페이지
+
+        email 인증번호 전송
+        이메일 주소 :
+            test_count
+
+        제출 버튼
+
+    제출 후
+
+        email 인증번호 전송
+        이메일 주소 :
+            test
+
+        제출 버튼
+
+    로 다시 제출
+    이렇게 되면 test_count 제출시 test_count = random number가 저장된 후 몇번 로그인 시도를 했는지 알기위해 test_count_count = 0이 저장된다
+    그 후 test 이메일 제출시 test = random number가 저장되고 test_count 가 random number에서 test 이메일의 로그인 시도 횟수 체크를 위해 0으로 선언되서 저장된다. (test_count = 0)
+    이렇게 Redis엔 두 이메일 주소가 저장되고(test, test_count) 인증 번호는 random number와 0이 된다. (Key-Value pair)
+
+    이메일 인증 페이지
+
+        email 인증번호 확인
+        이메일 주소 :
+            test_count
+        인증 번호 :
+            0
+
+        제출 버튼
+
+    제출 시 FLAG = pear 획득!
+
+해답 :
+
+    "/email_send" 페이지에서는 이메일 전송 시 유저가 입력한 email을 key로 랜덤한 번호가 설정되며, {email}_count 형태의 키로 인증 횟수가 생성됩니다.
+
+    prefix가 지정되지 않은 키를 사용하기 때문에 유저가 임의로 키를 지정할 수 있다면, 해당 키의 데이터가 어떤 값이 오게 될지 예측할 수 있게 됩니다.
+
+    1. user@dreamhack.io_count 로 이메일 전송.
+
+    redis에서는 아래와 같은 값이 설정됩니다.
+    user@dreamhack.io_count = {random number}
+    user@dreamhack.io_count_count = 0
+
+    2. user@dreamhack.io 로 이메일 전송.
+
+    redis에서는 아래와 같이 이전 키와 중복되어 새로운 값이 설정됩니다.
+    user@dreamhack.io = {random number}
+    user@dreamhack.io_count = 0
+    user@dreamhack.io_count_count = 0
+
+    추측 가능한 값으로 설정되기 때문에 이를 입력하여 인증 코드 과정을 우회할 수 있습니다.
+    또한 "/email_verify"과정에서 {email}_count와 비교하여 우회할 수도 있습니다.

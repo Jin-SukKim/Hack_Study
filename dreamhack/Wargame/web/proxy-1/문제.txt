@@ -1,0 +1,2 @@
+Raw Socket Sender가 구현된 서비스입니다.
+요구하는 조건을 맞춰 플래그를 획득하세요. 플래그는 flag.txt, FLAG 변수에 있습니다.

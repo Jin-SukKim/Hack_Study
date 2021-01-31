@@ -1,0 +1,33 @@
+Bandit Level 1 → Level 2
+Level Goal
+The password for the next level is stored in a file called - located in the home directory
+
+Commands you may need to solve this level
+ls, cd, cat, file, du, find
+
+Helpful Reading Material
+Google Search for “dashed filename” https://www.google.com/search?q=dashed+filename
+Advanced Bash-scripting Guide - Chapter 3 - Special Characters https://tldp.org/LDP/abs/html/special-chars.html
+
+답 :
+    bandit1@bandit:~$ ls -al
+    total 24
+    -rw-r-----  1 bandit2 bandit1   33 May  7  2020 -
+    drwxr-xr-x  2 root    root    4096 May  7  2020 .
+    drwxr-xr-x 41 root    root    4096 May  7  2020 ..
+    -rw-r--r--  1 root    root     220 May 15  2017 .bash_logout
+    -rw-r--r--  1 root    root    3526 May 15  2017 .bashrc
+    -rw-r--r--  1 root    root     675 May 15  2017 .profile
+
+    bandit1@bandit:~$ cat < -
+    CV1DtqXWVFXTvM2F0k09SHz0YwRINYA9
+    bandit1@bandit:~$ cat ./-
+    CV1DtqXWVFXTvM2F0k09SHz0YwRINYA9
+
+
+
+
+
+
+
+

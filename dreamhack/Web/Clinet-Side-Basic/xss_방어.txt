@@ -1,0 +1,24 @@
+기술
+Server-side Mitigations : xss를 유발할수 있는 태그 삽입 방지를 위해 서버 단에서 검증하는 방법
+	1)  HTML ENtity Encoding 이용, 태그로 인식하지 않도록 수정(Escape)
+	2)  화이트리스트 필터링 : 허용해도 안전한 일부 태그, 속성 제외 모든값 필터링
+
+HTTPOnly 플래그 사용 : 서버 측에서 응답 헤더에 Set-Cookie 헤더를 전송해 자바스크립트에서 해당 쿠키에 접근하는 것을 금지
+	- 쿠키 생성시 옵션으로 설정 가능
+	Set-Cookie: session=sbdh1vjwvq; HttpOnly
+Content Security Policy(CSP) 사용 : 응답 헤더나 meta 태그를 통해 아래와 같이 선언해서 사용할 수 있으며, 각각 지시어를 적용하여 사이트에서 로드하는 리소스들의 출처를 제한 가능
+	Content-Security-Policy: <지시어>; ...
+	ex)
+	default-src 'self' *.dreamhack.io  - 모든 리소스 출처가 현재 도메인이거나 dreamhack.io 도메인일 경우만 허용 등
+	
+	script-src 선언 = js 코드 출처 제한, nonce (랜덤)값 설정 = 키(서버에서 생성된 nonce값을 알아야 실행 가능)
+	<meta http-equiv="Content-Security-Policy" content="script-src 'sha256-5jFwrAK0UV47oFbVg/iCCBbxD8X1w+QvoOUepu4C2YA='">
+X-XSS-Protection : Response Header에 선언
+	X-XSS-Protection: <값>	값 0 = 필터 사용 x, 1 = xss 공격 탐지시 해당 부분 제거 후 페이지 출력
+
+	X-XSS-Protection: 0
+	X-XSS-Protection: 1
+	X-XSS-Protection: 1; mode=block // 공격 탐지시 페이지 전체 렌더링 중단
+	X-XSS-Protection: 1; report=<reporting-uri> // 공격 탐지 후 설정된 주소에 신고
+
+XSS Filter는 XSS 공격에 대한 강력한 방어 수단이었지만, 최신 브라우저에서는 사용하지 않는 추세입니다. 

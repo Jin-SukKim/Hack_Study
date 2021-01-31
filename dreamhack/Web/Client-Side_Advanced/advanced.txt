@@ -1,0 +1,14 @@
+Cross-Site Scripting (XSS)
+태그 및 속성, 자바스크립트 키워드 등을 기반으로 한 XSS 필터를 우회하는 기법을 알아보겠습니다.
+
+Content Security Policy (CSP)
+CSP 지시어를 사용하는 방법과 잘못된 CSP 사용 및 이를 우회할 수 있는 방법에 대해 알아보겠습니다.
+
+Cross-Site Request Forgery (CSRF)
+CSRF 공격을 방어하기 위한 기술인 CSRF Token의 오용 및 이를 공격할 수 있는 방법에 대해 알아보겠습니다.
+
+Cross-Origin Resource Sharing (CORS)
+SOP를 우회하여 Origin 간 자원을 공유하는 각종 기술에 대해 알아보고 이를 공격할 수 있는 방법에 대해 알아보겠습니다.
+
+Exploit Techniques
+제한된 상황에서 사용할 수 있는 테크닉과 특별한 상황에서 발생할 수 있는 Client-Side 공격 기법 등에 대해 알아보겠습니다.

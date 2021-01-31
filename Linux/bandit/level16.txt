@@ -1,0 +1,108 @@
+Bandit Level 15 → Level 16
+Level Goal
+The password for the next level can be retrieved by submitting the password of the current level to port 30001 on localhost using SSL encryption.
+
+Helpful note: Getting “HEARTBEATING” and “Read R BLOCK”? Use -ign_eof and read the “CONNECTED COMMANDS” section in the manpage. Next to ‘R’ and ‘Q’, the ‘B’ command also works in this version of that command…
+
+Commands you may need to solve this level
+ssh, telnet, nc, openssl, s_client, nmap
+
+Helpful Reading Material
+Secure Socket Layer/Transport Layer Security on Wikipedia
+https://en.wikipedia.org/wiki/Transport_Layer_Security
+OpenSSL Cookbook - Testing with OpenSSL
+https://www.feistyduck.com/library/openssl-cookbook/online/ch-testing-with-openssl.html
+
+답 :
+    bandit15@bandit:~$ openssl s_client -connect localhost:30001
+    CONNECTED(00000003)
+    depth=0 CN = localhost
+    verify error:num=18:self signed certificate
+    verify return:1
+    depth=0 CN = localhost
+    verify return:1
+    ---
+    Certificate chain
+    0 s:/CN=localhost
+    i:/CN=localhost
+    ---
+    Server certificate
+    -----BEGIN CERTIFICATE-----
+    MIICBjCCAW+gAwIBAgIEPksiGTANBgkqhkiG9w0BAQUFADAUMRIwEAYDVQQDDAls
+    b2NhbGhvc3QwHhcNMjEwMTAzMTkzODIzWhcNMjIwMTAzMTkzODIzWjAUMRIwEAYD
+    VQQDDAlsb2NhbGhvc3QwgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBAM2B6gJt
+    YTxcQPphtWBuM1ge8cuuvdaD4jc0LZ4PMQzqxH3xnw1pRWIJPUXHxoqbC4xxXNLk
+    6zR0CrLH2AfPraS3gMPy7MtmDoGpNea3XJ/t1jkcxSNPsTfoGjpHhJ686lmQLsO4
+    CAsLHYupe/dFwHwQYjfmp8M3rpWm8jv3kzK9AgMBAAGjZTBjMBQGA1UdEQQNMAuC
+    CWxvY2FsaG9zdDBLBglghkgBhvhCAQ0EPhY8QXV0b21hdGljYWxseSBnZW5lcmF0
+    ZWQgYnkgTmNhdC4gU2VlIGh0dHBzOi8vbm1hcC5vcmcvbmNhdC8uMA0GCSqGSIb3
+    DQEBBQUAA4GBAFEvYhX6w87jWnKLpx9iSVhI1cBxNS5tzzOT+XzjIiZF5v78QJcp
+    I7h4z4ncZVOJGazdArF+6/B2uHFT7+QKVmQNbnX/wSAEJM0Mvp9qHOlMYaRvwP34
+    BRXc6VqbVQ4EbPTU5UcN1Yp7lLJ4DuNYfChFpX0xCTkhIvGWqXkGecyP
+    -----END CERTIFICATE-----
+    subject=/CN=localhost
+    issuer=/CN=localhost
+    ---
+    No client certificate CA names sent
+    Peer signing digest: SHA512
+    Server Temp Key: X25519, 253 bits
+    ---
+    SSL handshake has read 1019 bytes and written 269 bytes
+    Verification error: self signed certificate
+    ---
+    New, TLSv1.2, Cipher is ECDHE-RSA-AES256-GCM-SHA384
+    Server public key is 1024 bit
+    Secure Renegotiation IS supported
+    Compression: NONE
+    Expansion: NONE
+    No ALPN negotiated
+    SSL-Session:
+        Protocol  : TLSv1.2
+        Cipher    : ECDHE-RSA-AES256-GCM-SHA384
+        Session-ID: E210004A570F90F2919BA0871FD6057E53D5989F3292F19CFDF35C43DE1B0A74
+        Session-ID-ctx: 
+        Master-Key: 0EC2A56DAC3B05E7A027129A0A57269B66BFD48E5B14E7DA506BC7A64E06DDAFB9D796FAF3F22480B349BD5EC0BBEF49
+        PSK identity: None
+        PSK identity hint: None
+        SRP username: None
+        TLS session ticket lifetime hint: 7200 (seconds)
+        TLS session ticket:
+        0000 - a9 48 f8 cd 59 86 5a b6-19 9c 9f f8 42 95 26 f2   .H..Y.Z.....B.&.
+        0010 - 02 59 40 b8 fa b8 a6 c3-b7 2b 66 51 ae 09 61 75   .Y@......+fQ..au
+        0020 - fa c9 a5 a2 26 fc 78 b2-24 c9 0e cd 94 ff 5f 23   ....&.x.$....._#
+        0030 - 8b 43 eb cb 84 c2 bb b4-66 7e ad b0 57 6a fd 86   .C......f~..Wj..
+        0040 - cb c3 e9 0f e2 30 61 d0-a4 a7 ab d1 53 d6 2b b0   .....0a.....S.+.
+        0050 - e5 58 bf cf a2 28 2e 91-76 20 25 5d 54 0a 95 a4   .X...(..v %]T...
+        0060 - c2 16 5b 68 a9 52 0c 19-17 4f 40 df 1f 9b 48 40   ..[h.R...O@...H@
+        0070 - a7 c0 78 8c 63 32 5c a8-1a a1 99 f0 43 d2 5c 81   ..x.c2\.....C.\.
+        0080 - 76 0f f2 f6 c0 93 3f f6-b0 97 6f 57 e8 a2 a0 5f   v.....?...oW..._
+        0090 - 38 27 0a a9 e2 74 0a 8a-22 95 89 44 53 dd 67 e9   8'...t.."..DS.g.
+
+        Start Time: 1611995784
+        Timeout   : 7200 (sec)
+        Verify return code: 18 (self signed certificate)
+        Extended master secret: yes
+    ---
+    BfMYroe26WYalil77FoDi9qh59eK5xNr // 현재 banit15 패스워드
+    Correct!
+    cluFn7wTiGryunymYOu4RcffSxQluehd // 다음 레벨 패스워드
+
+    closed
+
+
+If you want to be a client use openssl's s_client:
+
+openssl s_client -connect host:port
+If you want to be a server use openssl's s_server:
+
+openssl s_server -accept <port> -key <keyfile> -cert <certfile>
+Quick And Dirty cert and key for the server to use for testing:
+
+openssl req -x509 -nodes -days 365 -newkey rsa -keyout keyfile.key -out certfile.crt
+
+
+
+
+
+
+

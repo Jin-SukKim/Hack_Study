@@ -1,0 +1,88 @@
+NoSQL - Redis :
+    Redis는 key-value 데이터 모델을 가지며 메모리 기반으로 작동하는 NoSQL DBMS입니다.
+    메모리 기반이기 때문에 Read/Write 속도가 빨라 다양한 서비스에서 임시 데이터를 캐싱하는 용도로 많이 사용됩니다.
+    ex) 사용 예시
+        $ redis-cli // Redis Command-Line Client 실행 (localhost:6379 Redis서버로 연결)
+        127.0.0.1:6379> SET test 1234 # SET key value // SET 명령어를 통해 새로운 데이터 추가
+        OK
+        127.0.0.1:6379> GET test # GET key // GET 명령어를 통해 입력한 키에 해당하는 값 조회
+        "1234"
+
+    밑은 많이 사용되는 명령어의 리스트입니다.
+    명령어 리스트 (https://redis.io/commands)
+
+데이터 관련 :
+    명령어       구조                                    설명
+
+    GET         GET key                             데이터 조회
+
+    MGET        MGET key [key ...]                  여러 데이터를 조회
+
+    SET         SET key value                       새로운 데이터 추가
+
+    MSET        MSET key value [key value ...]      여러 데이터를 추가
+
+    DEL         DEL key [key ...]                   데이터 삭제
+
+    EXISTS      EXISTS key [key ...]                데이터 유무 확인
+
+    INCR        INCR key                            데이터 값에 1 더함
+
+    DECR        DECR key                            데이터 값에 1 뺌
+    
+관리 명령어 :
+    명령어              구조                            설명
+
+    INFO            INFO [section]                  DBMS 정보 조회
+
+    CONFIG GET      CONFIG GET parameter            설정 조회
+
+    CONFIG SET      CONFIG SET parameter value      새로운 설정을 입력
+
+Redis를 사용하는 서비스에서 악의적인 공격자가 원하는 명령어를 사용할 수 있는 버그가 발생하는 상황 해당 서비스의 권한을 획득하는 방법
+
+    1) Bug Case
+        Redis를 사용하는 서비스에서 의도하지 않은 명령어를 실행할 수 있는 버그가 발생하는 상황에 대해 다룹니다.
+            - node-redis
+            - SSRF
+
+    2) Exploit Technique
+        Redis를 통해 공격할 수 있는 방법들에 대해 다룹니다.
+            - 다른 어플리케이션과 연계
+            - Redis 명령어
+
+    3) Redis 주의 사항
+        Redis를 통해 서비스 사용 시 주의해야할 사항들에 대해 다룹니다.
+            - 인증 체계
+            - bind
+            - Same Key (Prefix 없는 Key 사용)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

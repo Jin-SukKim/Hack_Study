@@ -1,0 +1,74 @@
+Path Traversal : 
+    - URL/File Path를 사용 시 사용자의 입력 데이터에 의해 임의의 경로에 접근하는 취약점
+
+    대표적인 로직 = URL/File
+        ㄴ URL/File의 Path에는 Parent Directory(상위 디렉터리)를 의미하는 구분자(..)이 있다.
+
+        ex)
+            /tmp/test/../a 경로가 해석되면 /tmp/test/의 상위 폴더인 /tmp/ 폴더의 하위에 있는 a파일, 즉 /tmp/a를 나타낸다.
+
+    사용자 입력 데이터가 검증 없이 URL/File Path에 직접 사용 될 경우 Path Traversal 취약점 발생
+
+        ex) 내부 API가 dream이란 유저 정보를 가져오기 위해 사용자 입력이 URL에 들어가기도 한다.
+
+            http://internal.dreamhack.io/api/user/dream
+
+    필터링 or 인코딩 x => ../ 와 같은 구분 문자를 통해 상위 경로에 접근해 다른 API 호출 가능
+
+    URL 구분 문자
+
+        / : Path identifier
+        .. : Parent directory - /tmp/test/../1234 => /tmp/1234
+        ? : Query identifier - ? 뒤는 query로 해석
+        # : Fragment identifier - # 뒤의 값은 Server로 전달되지 않음(Anchor 같은 역할. 그 페이지의 세부적인 곳으로 이동)
+        & : Parameter separator - Key1=value&key2=value.. 형식으로 사용
+
+실습 : External Server에서 사용자 입력 데이터를 받아 Internal Server로 URL Path Variable 형식으로 전달해 사용.
+       사용자 입력에 대한 필터링이나 인코딩이 없어 Path Traversal 공격이 가능
+       Guest의 Level을 관리자로 만들기
+
+External Server : 외부에서 접근 가능
+    # https://external.dreamhack.io/
+    ...
+    def api_get(url):
+        return requests.get('https://internal.dreamhack.io/'+url).text
+    @app.route('/get_info', methods=['POST', 'GET'])
+    def get_info():
+        result = ''
+        if request.method == 'POST':
+            username = request.form['username']
+            result = api_get('/api/user/' + username)
+        return render_template('get_info.html', result=result)
+    ...
+
+Internal Server : 내부망에서만 접근 가능
+    # https://internal.dreamhack.io/
+    ...
+    @app.route('/')
+    def index(): return 'index page'
+    @app.route('/api/')
+    def api(): return route_info();
+    @app.route("/api/admin/make_admin/<str:username>")
+    def make_admin(username):
+        users[username].level = 'admin'
+        return username + '의 레벨을 관리자로 설정';
+    @app.route("/api/user/<str:username>")
+    def user(username):
+        return json.dumps(users[username])
+    ...
+
+입력 : url : https://external.dreamhack.io/user/get_info
+
+    User name : guest        get_info button
+
+    https://internal.dreamhack.io/api/user/guest
+
+    출력 : {"about":"hellow world", "level":"user"}
+
+입력 :
+    User name : ../admin/make_admin/guest  get_info button
+
+    https://internal.dreamhack.io/api/user/../admin/make_admin/guest
+
+    출력 :  guest의 레벨을 관리자로 설정
+            축하드립니다.   

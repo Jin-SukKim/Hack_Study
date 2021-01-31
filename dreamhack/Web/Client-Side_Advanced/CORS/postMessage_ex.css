@@ -1,0 +1,15 @@
+iframe {
+    border: 0 none;
+    width: 6em;
+    height: 40px;
+    margin: 0 .5em .5em 0;
+}
+dialog {
+    position: static;
+    display: block;
+    margin: 1em auto;
+    border: solid;
+    padding: 1em;
+    background: white;
+    color: baclk;
+}

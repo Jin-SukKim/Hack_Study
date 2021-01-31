@@ -1,0 +1,150 @@
+CouchDB - 특수 구성요소 :
+    CouchhDB의 사용 시 /{db}/... 와 같은 구조로 접근합니다.
+    일반적인 사용 예시를 보면 /{db}/{_id} 구조로 접근합니다.
+
+    {_id} 값을 통해 Database 안의 도큐먼트에 접근을 하지만 Database 안의 도큐먼트 외에도
+    미리 정의된 특수 구성요소들이 있고 /{db}/_...} 경로를 통해 접근할 수 있습니다.
+
+    특수 구성요소들은 _(밑줄)을 Prefix로 사용합니다.
+    대표적으로 /{db}/_all_docs 이 있습니다.
+    해당 페이지에 접근하면 지정된 데이터베이스에 포함된 모든 도큐먼트를 반환합니다.
+
+    밑은 NodeJS에서 CouchDB를 사용하는 코드입니다.
+    ex) 데이터 추가
+        $ curl -X PUT http://{username}:{password}@localhost:5984/users/test -d '{"_id": "admin", "upw": "secretpassword"}'
+        {"ok":true,"id":"admin","rev":"2-142ddb6e06fd298e86fa54f9b3b9d7f2"}
+
+        CouchDB에서 PUT 메소드로 새로운 도큐먼트를 생성할 수 있습니다. curl 명령어의 -X 옵션을 사용해 PUT 메소드로
+        , -d 옵션을 사용해 {"_id": "admin", "upw": "secretpassword"} 데이터를 전송합니다.
+
+    ex) app.js
+        const express = require('express');
+        const session = require('express-session');
+        const app = express();
+        
+        app.use(express.json());
+        app.use(express.urlencoded({extended: false}));
+        
+        app.use(session({'secret': 'secret'}));
+        
+        const nano = require('nano')('http://{username}:{password}@localhost:5984');
+        const users = nano.db.use('users');
+        
+        // { _id: 'admin', _rev: '1-22a458e50cf189b17d50eeb295231896', upw: '**secret**' }
+        app.post('/auth', function(req, res) {
+            users.get(req.body.uid, function(err, result) {
+                if (err) {
+                    res.send('error');
+                    return;
+                }
+                if (result.upw === req.body.upw) {
+                    req.session.auth = true;
+                    res.send('success');
+                } else {
+                    res.send('fail');
+                }
+            });
+        });
+        
+        const server = app.listen(3000, function() {
+            console.log('app.listen');
+        });
+
+    위에 코드와 같이 nano 패키지의 get 함수를 사용할 때 사용자 입력 데이터를 사용하고, 
+    입력에 대한 검증이 없는 경우 특수 구성요소를 입력해 개발자가 의도하지 않은 행위를 수행할 수 있습니다.
+
+    uid에 _all_docs값을 사용할 경우 nano 패키지 내부에서 CouchDB 내부의 /users/_all_docs 페이지에 요청을 보냅니다.
+
+    _all_docs 페이지는 특수 구성요소이기 때문에 err 변수에는 null, result 변수에는 _all_docs 페이지의 내용이 들어가게 되고 
+    result.upw 값이 undefined 이기 때문에 POST 요청을 보낼 때 upw 값을 생략하여 req.body.upw 값을 undefined로 만들게 된다면
+    if (result.upw === req.body.upw) 해당 조건을 우회해 인증에 성공한 세션을 얻을 수 있습니다.
+
+admin :
+    CouchDB사용하는 위의 코드에서 /auth 페이지에 uid(req.body.uid) 값이 "admin"으로 입력 시 내부적으로 실행되는 동작을 curl 명령어로 확인한 결과입니다.
+    ex)
+        $ curl -i http://{username}:{password}@localhost:5984/users/admin   // curl 커맨드의 -i 옵션을 사용해 Response Header를 출력합니다.
+        HTTP/1.1 200 OK     // DB에 _id 값이 admin인 도큐먼트가 존재하기 때문에 HTTP Status가 200으로 리턴됩니다.
+        Cache-Control: must-revalidate
+        Content-Length: 83
+        Content-Type: application/json
+        Date: Tue, 19 May 2020 16:47:49 GMT
+        ETag: "2-142ddb6e06fd298e86fa54f9b3b9d7f2"
+        Server: CouchDB/3.1.0 (Erlang OTP/20)
+        X-Couch-Request-ID: 028e8b621c
+        X-CouchDB-Body-Time: 0
+        
+        {"_id":"admin","_rev":"2-142ddb6e06fd298e86fa54f9b3b9d7f2","upw":"secretpassword"}
+        // admin 도큐먼트의 내용이 리턴됩니다.
+
+    요청이 성공(HTTP Status: 200)했기 때문에 result 변수에 위의 curl 결과 값이 들어가고 err변수에 null이 들어갑니다.
+
+    if (result.upw === req.body.upw) 코드에서 result.upw로 변수에 접근할 경우
+    admin 도큐먼트의 upw에 해당하는 "secretpassword" 값으로 설정되어 있게 됩니다.
+
+유효하지 않은 유저명 :
+    CouchDB사용하는 위의 코드에서 /auth 페이지에 uid(req.body.uid) 값이 유효하지 않은 유저명으로 입력 시 내부적으로 실행되는 동작을 curl 명령어로 확인한 결과입니다.
+    ex)
+        $ curl -i http://{username}:{password}@localhost:5984/users/undefined_user  // curl 커맨드의 -i 옵션을 사용해 Response Header를 출력합니다.
+        HTTP/1.1 404 Object Not Found   // DB에 _id 값이 undefined_user인 도큐먼트가 존재하지 않기 때문에 HTTP Status가 404로 리턴됩니다.
+        Cache-Control: must-revalidate
+        Content-Length: 41
+        Content-Type: application/json
+        Date: Tue, 19 May 2020 17:07:14 GMT
+        Server: CouchDB/3.1.0 (Erlang OTP/20)
+        X-Couch-Request-ID: be30c84acd
+        X-CouchDB-Body-Time: 0
+        
+        {"error":"not_found","reason":"missing"}    // 에러 정보를 리턴됩니다.
+
+    요청이 실패(HTTP Status: 404)했기 때문에 result 변수에 null 이 들어가고 err변수에 요청에 대한 에러 정보가 들어갑니다.
+
+    if (err) 코드에서 err 변수 값이 null이 아니기 때문에 해당 조건문이 실행됩니다.
+
+        Javascript의 if문에서 거짓 조건이 되는 데이터: false, 0, "", null, undefined, NaN
+
+        자세한 내용은 https://dorey.github.io/JavaScript-Equality-Table/#if-statement 에서 확인할 수 있습니다.
+
+_all_docs :
+    CouchDB사용하는 위의 코드에서 /auth 페이지에 uid(req.body.uid) 값이 "_all_docs"으로 입력 시 내부적으로 실행되는 동작을 curl 명령어로 확인한 결과입니다.
+    ex)
+        $ curl -i http://{username}:{password}@localhost:5984/users/_all_docs   // curl 커맨드의 -i 옵션을 사용해 Response Header를 출력합니다.
+        HTTP/1.1 200 OK     // DB에 _id 값이 _all_docs인 도큐먼트가 존재하지 않기 때문에 HTTP Status가 200으로 리턴됩니다.
+        Cache-Control: must-revalidate
+        Content-Type: application/json
+        Date: Tue, 19 May 2020 17:24:32 GMT
+        Server: CouchDB/3.1.0 (Erlang OTP/20)
+        Transfer-Encoding: chunked
+        X-Couch-Request-ID: 43c8ca548f
+        X-CouchDB-Body-Time: 0
+        
+        {"total_rows":1,"offset":0,"rows":[     
+        {"id":"admin","key":"admin","value":{"rev":"2-142ddb6e06fd298e86fa54f9b3b9d7f2"}}
+        ]}
+        // _all_docs 도큐먼트의 내용이 리턴됩니다.
+
+    요청이 성공(HTTP Status: 200)했기 때문에 result 변수에 위의 curl 결과 값이 들어가고 err변수에 null이 들어갑니다.
+
+    _all_docs 도큐먼트에는 upw 키에 해당하는 값이 없기 때문에 if (result.upw === req.body.upw) 코드에서 
+    result.upw 변수 값이 undefined가 되고 사용자가 POST 요청을 보낼 때 upw 값을 생략하면 
+    req.body.upw 변수 값이 undefined가 되기 때문에 해당 조건을 우회해 인증에 성공한 세션을 얻을 수 있습니다.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

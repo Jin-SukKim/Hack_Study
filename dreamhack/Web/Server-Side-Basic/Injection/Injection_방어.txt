@@ -1,0 +1,106 @@
+SQL Injection 취약점 방어
+    
+    ORM(Object Relational Mapper)과 같이 검증된 SQL 라이브러리를 사용하는 것
+        - 개발자가 직접 쿼리를 작성하는 Raw 쿼리를 사용하지 않아도 기능 구현이 가능하여, SQL Injection으로부터 상대적으로 안전
+        - 사용자의 입력 값을 라이브러리 단에서 스스로 escape하고 쿼리에 매핑시키기 때문에 안전하게 SQL 쿼리를 실행
+
+    ex) ORM Exmaple (python SQLAlchemy)
+
+        from flask_sqlalchemy import SQLAlchemy
+        ...
+        db = SQLAlchemy(...)
+        ...
+        class User(db.Model):
+            id = db.Column(db.Integer, primary_key=True)
+            uid = db.Column(...)
+            upw = db.Column(...)
+            ...
+        User.query.filter(User.uid == uid, User.upw == upw).all()
+
+    // ORM 사용하더라도 입력 데이터 검증이 없으면 잠재적 위협이 될수도 있다.
+
+Command Injection 방어
+    사용자의 입력 데이터가 Command 인자가 아닌 다른 값으로 해석되는 것을 방지해야 함
+
+    - 웹 어플리케이션에서 OS Command를 사용하지 않는 것
+    - 필요한 OS Command가 라이브러리 형태로 구현되어 있으면 해당 lib 사용 권장
+    - or 직접 프로그램 코드로 포팅해 사용 권장
+
+    만약 OS Command에 사용자 입력 데이터 필요시 필터링 사용
+        - 화이트/블랙 리스트 필터링 방식
+    
+    졍규식을 통한 화이트리스트 방식 필터링
+
+    ex) ping을 보내는 페이지의 경우 사용자가 입력한 IP가 정삭적인 IP 형식인지 정규식으로 검증 후 사용할 수 있습니다.
+
+        import re, os, ...
+        ...
+        chk_ip = re.compile('^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$')
+        if bool(chk_ip.match(ip)):
+            return run_system(f'ping -c 3 {ip}')
+        else:
+            return 'ip format error'
+
+    OS Command에서 Meta 문자로 사용되는 값을 필터링하고 ''로 감싸기
+
+    ex) ping을 보내느 페이지의 경우 사용자가 입력한 IP를 따옵표로 감싸서 사용할 수 있습니다.
+
+        if '\'' in ip:
+            return 'not allowed character'
+        return run_system(f'ping -c 3 \'{ip}\'')
+
+    Double Quotes (")를 사용할 경우 dollarsign ($), backquote (`) 가 해석되어 모든 입력을 문자열로 처리하는 Single Quotes (')를 사용해야 합니다.
+        ㄴ $ echo "$(echo "upg")"
+           upg
+           $ echo '$(echo "upg")'
+           $(echo "upg")
+
+    execve args 인자로 사용
+    
+    ex) shell meta 문자로 해석되지 않도록 입력 값 입력
+        
+        subprocess.Popen(['ping', '-c', '3', ip]) # B
+    
+    라이브러리 사용
+
+    ex) ping3는 소켓프로그래밍을 통해 ping 기능을 구현한 라이브러리
+        // 보안성 및 안정성 등 검토 후 사용
+        #! pip install ping3 
+        # https://github.com/kyan001/ping3/blob/master/ping3.py
+        import ping3
+        ping3.ping(ip)
+
+Server SIde Template INjection(SSTI) 방어 :
+    사용자의 입력 데이터를 Template source에 삽입되지 않도록 한다.
+        ㄴ 사용자의 입력 데이터를 Template에서 출력하기 위해 Template context에 값을 넣어 출력
+
+Path Traversal 방어:
+    URL Encoding과 같은 인코딩을 사용해 사용자의 입력 데이터에 포함된 구분 문자를 인식하지 않도록 할 수 있습니다.
+
+    URL 구분 문자를 사용하지 못하도록 하는 필터링 사용
+
+SSRF 방어
+    사용자가 입력한 URL의 Host를 화이트리스트 방식으로 검증
+    미리 신뢰할 수 있는 Domain Name, IP address를 화이트리스트에 등록하고 사용자가 입력한 URL에서 Host 부분을 파싱해 체크
+
+    URL Host 화이트리스트방식 필터링
+
+    from urllib.parse import urlparse
+    WHITELIST_URL = [
+        'i.imgur.com',
+        'img.dreamhack.io',
+        ...
+    ]
+    SCHEME = ['http', 'https']
+    def is_safehost(url):
+        urlp = urlparse(url)
+        if not urlp.scheme in SCHEME:
+            return False
+        hostname = urlp.hostname.lower()
+        if hostname in WHITELIST_URL:
+            return True
+        return False
+    print(is_safehost('https://127.0.0.1/'))
+    print(is_safehost('https://i.imgur.com/Bsz7RJN.png'))
+
+    사용자 URL 처리 서버를 독립적으로 망 분리해 방지 등

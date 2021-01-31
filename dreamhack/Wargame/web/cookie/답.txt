@@ -1,0 +1,13 @@
+1. URL 에 /login을 입력해 로그인 페이지로 간다
+2. guest id로 로그인 id=guest pw=guest
+3. 개발자 창을 열어 application 탭으로 가서 cookie를 수정한다
+4. 로그인시 쿠키에 username이 guest로 저장되는데 admin으로 수정 후 새로고침을 한다
+5. admin으로 로그인 되고 flag 획득
+
+
+
+
+
+
+
+

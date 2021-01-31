@@ -1,0 +1,210 @@
+Server Side Request Forgery(위조)(SSRF) : 
+    - 공격자가 서버에서 변조된 요청을 보낼 수 있는 취약점
+
+    웹 앱에서 사용자가 입력한 URL에 요청을 보내느 기능이 구현되어야 할 수도 있다.
+        ex) URL을 통해 사진 업로드 등
+
+    CSRF와 차이점은 변조된 요청을 보내는 대상의 차이.
+        - CSRF는 웹 클라이언트(브라우저)가 보냄
+        - SSRF는 웹 앱에서 보내지게 됨
+
+    웹 어플리케이션에서 요청을 보내기 떄문에 웹 앱이 작동하고 잇는 서버 내부의 포트, 서버와 연결된 내부망에 요청을 보낼 수 있고
+    Server-side에서 변조된 요청 / 의도하지 않은 서버로 요청을 보내는 공격이 SSRF
+
+// 웹 서비스 인프라 구성시 외부망/내부망 나눠 설계 -> 내부망에서는 인증된 서버/사용자만이 요청 가능을 가정 = 인증 기능 x
+// 클라우드 플랫폼들에서도 내부망에서 작동하는 기능들이 있어 SSRF 공격 발생시 인프라 공격하는 취약점 가능성
+
+블랙리스트방식으로 URL의 Host가 내부망/루프백 주소인지 검증시
+http://127.0.0.4/, http://0x7f000001/ 와 같은 루프백 주소를 사용하거나 Host에 Domain Name을 넣어 DNS Rebinding 공격 등으로 우회 가능
+
+실습 :  이미지 URL을 입력받아 서버에서 접근하는 SSRF 모듈.
+        Internal server에 접근해보기
+
+External Server :
+    from flask import Flask, render_template, request
+    import requests
+    from dreambank import imgcheckFunc, adminFunc, configFunc, logFunc
+    app = Flask(__name__)
+    adminIP = ["127.0.0.1"]
+    def adminCheck():
+        if request.remote_addr in adminIP:
+            return True
+        else:
+            return False
+    @app.route("/")
+    def index():
+        if adminCheck():
+            return render_template("admin_index.html")
+        else:
+            return render_template("index.html")
+    @app.route("/imgCheck")
+    def imgcheck():
+        url = request.form['url']
+        img = requests.get(url).content
+        checkResult = imgcheckFunc(img)
+        return checkResult
+    @app.route("/admin")
+    def admin():
+        if adminCheck():
+            return adminFunc()
+    @app.route("/config")
+    def config():
+        if adminCheck():
+            return configFunc()
+    @app.route("/log")
+    def log():
+        if adminCheck():
+            return logFunc()
+    if __name__ == "__main__":
+        app.run(host='0.0.0.0')
+
+Internal Server :
+    from flask import Flask, render_template, request
+    import requests
+    from dreambank import userLevel, userList
+    app = Flask(__name__)
+    @app.route("/")
+    def index():
+        return render_template("index.html")
+    @app.route("/user")
+    def user():
+        action = request.args.get('action')
+        if action == "grant":
+            name = request.args.get('name')
+            result = userLevel(name, 'admin')
+        elif action == "list":
+            result = userList()
+        else:
+            result = userList()
+        return result
+    if __name__ == "__main__":
+        app.run()
+
+입력 : http://dreambank.io/imgCheck
+
+    이미지 주소 : http://127.0.0.1/
+    등록 버튼
+
+출력 : 
+    Local Service Route Info
+
+    /admin
+    /config
+    /log
+
+입력 :
+
+    이미지 주소 : http://127.0.0.1/admin
+    등록 버튼
+
+출력 : 
+    Admin Page
+
+    hi admin.
+
+입력 :
+
+    이미지 주소 : http://127.0.0.1/config
+    등록 버튼
+
+출력 : 
+    Config Page
+
+    AdminIP: 127.0.0.1
+    SecretKey: XXXX-XXXX-XXXX-XXXX
+    internal-api-URL: http://internal-api.dreambank
+
+입력 :
+
+    이미지 주소 : http://127.0.0.1/log
+    등록 버튼
+
+출력 : 
+    Log Page
+
+    https://dreamhack.io/assets/dreamhack_logo.png
+    http://127.0.0.1/admin
+    http://127.0.0.1/config
+    http://127.0.0.1/log
+
+입력 : internal server로 접속
+
+    이미지 주소 : http://internal-api.dreambank/
+    등록 버튼
+
+출력 : 
+    Dreambank Internal Service Route Info
+
+    /user
+
+입력 : internal server
+
+    이미지 주소 : http://internal-api.dreambank/user
+    등록 버튼
+
+출력 : 
+    User List
+
+    admin: admin
+    ori: admin
+    dream: user
+
+
+입력 : internal server
+
+    이미지 주소 : http://internal-api.dreambank/user?action=list
+    등록 버튼
+
+출력 : 
+    User List
+
+    admin: admin
+    ori: admin
+    dream: user
+
+
+입력 : internal server
+
+    이미지 주소 : http://internal-api.dreambank/user?action=grant&name=dream
+    등록 버튼
+
+출력 : 
+    success
+
+입력 : internal server
+
+    이미지 주소 : http://internal-api.dreambank/user
+    등록 버튼
+
+출력 : 
+    User List
+
+    admin: admin
+    ori: admin
+    dream: admin
+
+
+
+[목표]
+- 실습의 목표는 Internal Server에 요청을 보내 임의 사용자에게 admin 권한을 부여하는 것입니다.
+[External Server]
+- 주기능은 이미지의 URL을 입력 받아 해당 URL로 요청을 한번 보내고 그 결과값을 imgcheckFunc가 처리합니다.
+- 해당 URL의 검증이 부족해 임의 서버로 요청을 보낼 수 있는 SSRF 취약점이 발생합니다.
+- 일부 핸들러는 요청을 한 IP 주소가 adminIP(127.0.0.1)와 일치할 경우 접근을 허락하거나 더 많은 기능을 제공합니다.
+- 주기능을 활용해 admin만 접근가능한 핸들러를 요청할 수 있습니다.
+    - http://127.0.0.1/admin
+    - http://127.0.0.1/config
+        - 해당 요청의 반환 값으로 Internel Server의 주소를 알아낼 수 있습니다.
+        Config Page
+        AdminIP: 127.0.0.1
+        SecretKey: XXXX-XXXX-XXXX-XXXX
+        internal-api-URL: http://internal-api.dreambank
+    - http://127.0.0.1/log
+[Internal Server]
+- Internal Server의 주소는 External Server에 존재하는 SSRF 취약점을 통해 얻을 수 있습니다. (http://internal-api.dreambank)
+- Line 10~24에서는 사용자의 목록을 확인하거나, 권한을 부여하는 로직을 가지고 있습니다.
+[*] 사용자 목록 확인 URL
+http://internal-api.dreambank/user
+[*] 사용자 권한 부여 URL
+http://internal-api.dreambank/user?action=grant&name=dream
+사용자 권한 부여 URL에 접근해 dream 사용자에게 admin 권한을 부여할 수 있습니다.

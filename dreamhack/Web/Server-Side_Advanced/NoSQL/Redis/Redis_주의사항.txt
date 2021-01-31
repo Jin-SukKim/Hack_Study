@@ -1,0 +1,121 @@
+Redis 주의 사항 :
+
+1) 인증 체계 :
+    Redis는 기본 설정 상 인증 과정이 포함되어 있지 않은 어플리케이션입니다.
+
+    그런 이유로 Redis에 접근이 가능한 경우 원하는 명령어를 통해 앞서 배운 공격들을 수행하는데 어려움이 없습니다.
+
+    Redis 설정 파일에 아래와 같이 requirepass에 패스워드를 지정할 수 있습니다.
+    ex)
+        $ cat /etc/redis/redis.conf 
+        ... 
+        requirepass pass1234
+
+    설정 이후 Redis 사용 시 AUTH 명령어를 통해 인증 과정을 거쳐야만 Redis 명령어를 사용할 수 있습니다.
+    ex)
+        $ sudo service redis-server restart // 변경된 설정이 적용될 수 있도록 재실행
+        ...
+        $ redis-cli
+        127.0.0.1:6379> keys *
+        (error) NOAUTH Authentication required.
+        127.0.0.1:6379> AUTH pass1234
+        OK
+        127.0.0.1:6379> keys *
+        1) "foo"
+
+    Redis 버전 6.0 부터는 Multi Users와 ACL(Access Control List)를 통해 접근 제어를 할 수 있는 기능이 추가되었습니다.
+    이를 통해 다양한 유저에 대한 인증 및 권한/명령어 등을 분리하여 사용할 수 있습니다.
+
+2) bind :
+    Redis는 3.2.0 버전 부터 Bind 127.0.0.1 로 기본 설정되어 서비스됩니다.
+    하지만 구조적 문제 또는기능상의 구현을 위해 0.0.0.0 등 위험한 Bind 범위를 지정하여 서비스되는 경우가 있습니다.
+        // 255.255.255.255는 한정된 범위 내에 접속된 모든 기기에 패킷을 보내는 용도로 사용됩니다.
+        // 0.0.0.0은 IPv4 패킷을 전송하고자 하는 컴퓨터가 자신의 IP주소를 모르는 경우 통신을 하기 위해 사용됩니다.
+
+    악의적인 공격자에게 해당 서비스가 노출되어 직접 접근이 될 경우 앞서 배운 공격 방법 등을 통해 서비스에 위협이 발생할 수 있습니다.
+    ex)
+        # 기본 설정
+        BIND 127.0.0.1
+        
+        # 위험한 설정
+        # BIND 127.0.0.1 # 주석 처리 시 모든 IP 접속을 허용합니다.
+        BIND 0.0.0.0
+        
+        # 기능적으로 허용해야 하는 경우 권고 설정, 
+        # IP 지정을 통해 해당 IP만 허용하며 허용하는 IP에 대한 주기적인 확인이 필요합니다.
+        BIND 192.168.1.2 127.0.0.1
+
+3) Same Key (prefix 없는 key 사용) :
+    기본 설정 상 Redis는 Key-Value로 저장되는 구조이고 RDBMS의 Schema/table
+    또는 MongoDB의 Collection과 같이 시스템적으로 특정한 영역으로 구분지어 저장되지 않습니다.
+
+    Redis에서 제공하는 logical database을 통해 구분지어 사용 가능하지만, 최대 16개(zero-based numeric index, 0~15)만 가질 수 있으며, 
+    아래와 같이 연결 시 db를 구분지어 연결하거나, 연결된 후 SELECT명령어를 통해 사용할 db를 변경한 후 사용하여야 합니다.
+    ex)
+        r0 = redis.createClient({ db: 0 }); // db 0 연결
+        r1 = redis.createClient({ db: 1 }); // db 1 연결
+        
+        r0.select(1, function(err){...});   // db 0 에서 1로 변경
+
+    키 중복 문제 등을 방지하기 위해 object-type:id 같은 형식으로 스키마를 사용하고 여러 필드를 사용할 경우 ., -문자로 구분하여 사용해야 합니다.
+    (https://redis.io/topics/data-types-intro#redis-keys)
+    ex)
+        Cache를 Redis에서 구현할 때 Cache Type(e.g. 유저 정보 캐시/인증 관련 캐시/임시 데이터 등)별 Redis서버를 분리하지 않을 때
+        Key 값이 중복되어 사용될 경우 문제가 발생할 수 있습니다.
+
+    redis.io의 설명처럼 Redis에서 사용되는 Cache Type별로 Key 값에 구분자를 붙여 사용하지 않으면 서로 중복되어 사용될 수 있고 문제가 발생할 수 있습니다.
+
+    Redis에서 Key를 구분자 없이 사용하고, 사용자의 입력에 의해 key가 결정 된다면
+    사용자가 임의로 다른 로직의 키를 생성시켜 어플리케이션 로직에 혼선을 발생시킬 수 있습니다.
+
+    예를 들어 Redis에 사용자의 메일 인증번호와 인증 횟수를 확인하기 위한 정보를 저장하는 어플리케이션에서
+    Prefix없는 Key를 사용하게 되면 아래와 같은 문제가 발생할 수 있습니다.
+    ex)
+        SET key value
+        # 사용자 메일 인증 번호 저장 시
+        SET {email} {random number}
+        
+        # 사용자 메일 인증 횟수 저장 시
+        SET {email}_count 0
+
+    a) user1@dreamhack.io_count메일 주소로 인증 번호 요청
+        - Redis의 데이터는 아래와 같이 저장됩니다.
+        ex)
+            user1@dreamhack.io_count = {random number}
+            ser1@dreamhack.io_count_count = 0  
+
+    b) user1@dreamhack.io메일 주소로 인증 번호 요청
+        - Redis의 데이터는 아래와 같이 변경됩니다.
+        ex)
+            user1@dreamhack.io_count = 0
+            user1@dreamhack.io_count_count = 0
+            user1@dreamhack.io = {random number}
+
+    기존에 사용되던 키가 새로 저장되는 키와 중복되어 이전에 저장된 랜덤한 인증 번호가 아닌 추측 가능한 숫자로 변경되었으며,
+    이를 통해 실제 인증 과정 없이 인증 로직을 우회할 수 있습니다.
+
+    그 외에도 각 데이터 별로 서로 다른 구분자를 사용하여 구현 시 문제가 발생할 수도 있습니다.
+    ex)
+        e.g.
+        Cache_A = f'CACHE_A:{input}'
+        Cache_B = f'{input}.CACHE_B'
+        => CACHE_A:test.CACHE_B와 같은 값이 들어오면 문제가 됨
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

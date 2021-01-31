@@ -1,0 +1,50 @@
+힙 오버플로우 (Heap Overflow) :
+    ex)
+        // heap-1.c
+        #include <stdio.h>
+        #include <stdlib.h>
+        int main(void) {
+            char *input = malloc(40);
+            char *hello = malloc(40);
+            
+            memset(input, 0, 40);
+            memset(hello, 0, 40);
+            
+            strcpy(hello, "HI!");
+            read(0, input, 100);
+            
+            printf("Input: %s\n", input);
+            printf("hello: %s\n", hello);
+        }
+        
+    heap-1.c는 40바이트 크기의 힙 버퍼 input과 hello를 할당한 후,
+    hello 버퍼에는 "HI!" 문자열을 복사하고 read 함수를 통해 input에 데이터를 입력받는 코드입니다.
+    그러나 read 함수를 통해 입력받는 길이인 100바이트가 input 버퍼의 크기인 40바이트보다 크기 때문에 힙 오버플로우가 발생합니다.
+
+    힙 오버플로우가 발생했을 때의 힙 메모리 상태는 그림으로 간략히 나타낼 수 있습니다.
+
+    input 영역에서 버퍼 오버플로우가 발생해 hello의 메모리 영역까지 침범할 경우,
+    line 16에서 hello 메모리를 출력할 때 "HI!" 문자열이 아니라 공격자에게 오염된 데이터가 출력됩니다.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

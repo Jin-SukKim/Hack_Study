@@ -1,0 +1,33 @@
+Bandit Level 7 → Level 8
+Level Goal
+The password for the next level is stored in the file data.txt next to the word millionth
+
+Commands you may need to solve this level
+grep, sort, uniq, strings, base64, tr, tar, gzip, bzip2, xxd
+
+답 :
+    bandit7@bandit:~$ ls
+    data.txt
+    bandit7@bandit:~$ cat data.txt
+    disquiet's	CNN1fifqKOWFLjj90rpLECbGDYYWBE2L
+    tarried	5haIGrGY3FwchtNSthRLQlZXHy87qDfH
+    provoked	XnCWMXh07lC4iNs0936AW993RMStVk5P
+    Berber's	kVcCgEuLXi5iSyi6AVVtHfyaZ9AQ8L1F
+    centerfold	LVtOp9FsN7BnNZOv9sBPbVaGuANCx5mu
+    keeping	zSa4nY5QYiMkY0aGsevb9HW8nESk7FqM
+    incurring	5QcEHHNaT9YjQOdfzIHsZDL82HJletfH
+    minibusses	A3hvq9w8iBMdqnFdAwla1cFC9Ao8YQad
+    denouncing	4cffU0NoRMFddSJQ1WmlLQWd9GN8G0t1
+    Mohammedans	AHSSZFlWVfdaTjbpjOtyiqAkqtGGsiPE
+    Jerome's	nnqhe8IVHYdyiNoBTLOsM1miKk8XcBLw
+    patrons	yPlgiEg7D3ddlVEERPCPjjOXKupuWJlP
+    angstrom	bnTR5cEVb3xqU4m0z4LBLqrjU94Em5ei
+    admirable	gzyPCT55II3WIPzicZm4Y9Yqfd5dZ1No
+    Trojan	qC61NSMfPLn6KvoMPXiVuz^C
+                    *
+                    *
+                    *
+    bandit7@bandit:~$ cat data.txt | grep millionth
+    millionth	cvX2JJa4CFALtqS87jk27qwqGhBM9plV
+
+flag : cvX2JJa4CFALtqS87jk27qwqGhBM9plV

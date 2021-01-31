@@ -1,0 +1,86 @@
+잘못된 CSRF Token 생성 :
+    CSRF 방어에 있어서 주의할 점에 대해 알아보도록 하겠습니다.
+
+    CSRF 방어 중 CSRF Token은 같은 Origin에서만 접근 가능한 형태로 특정 토큰을 저장해 제3자가 아닌 사용자로부터 요청이 왔다는 것을 인증할 수 있는 방법입니다.
+    CSRF Token 값은 보통 HTML Form의 hidden 필드로 입력되나, 동적 요청에서도 사용될 수 있습니다.
+    ex)
+        <?php
+        if (!isset($_COOKIE["csrftoken"])) {
+            $csrftoken = bin2hex(random_bytes(32));
+            setcookie("csrftoken", $csrftoken);
+        } else {
+            $csrftoken = $_COOKIE["csrftoken"];
+        }
+        $method = $_SERVER["HTTP_METHOD"];
+        if ($method !== "GET" && $method !== "HEAD") {
+            if (!isset($_POST["csrftoken"]) ||
+                !hash_equals($csrftoken, $_POST["csrftoken"]) {
+                header("HTTP/1.1 403 Forbidden");
+                die("CSRF detected");
+            }
+            echo "Input value: ";
+            echo htmlentities($_POST["query"], ENT_QUOTES|ENT_HTML5, 'utf-8');
+        }
+        ?>
+        <form action="" method="POST">
+            <input name="csrftoken" type="hidden" value="<?=htmlentities($csrftoken, ENT_QUOTES|ENT_HTML5, 'utf-8'); ?>">
+            <input name="query" type="text" />
+            <input type="submit" />
+        </form>
+        
+    CSRF Token 방식은 CAPTCHA 또는 암호 방식과 달리 추가적인 사용자 상호작용이 불필요하다는 장점을 가지고 있으나
+    한편 XMLHttpRequest나 Fetch API 등으로 Authorization과 같은 헤더를 설정하여 통신하는 것에 비해 여러 가지 보안 문제의 원인이 되고는 합니다. 
+
+    SRF Token 사용에 있어 가능한 취약점의 예시는 다음과 같습니다.
+
+    1) 짧은 CSRF Token
+        - CSRF Token은 외부자가 예측 불가능하도록 설계된 만큼 무차별 대입 공격(brute-force attack)이 효과적이지 않도록 토큰의 길이가 충분히 길어야 합니다.
+    
+    2) 예측 가능한 CSRF Token (PRNG 등)
+        - 토큰의 길이가 충분하여도 공격자가 충분히 접근 가능한 데이터(예. 현재 시간 등)을 바탕으로 생성하거나
+          또는 암호학적으로 안전하지 않은 의사 난수 생성기를 사용하게 되면 토큰을 예측하는 것이 덜 어려워지게 됩니다. 
+        - 이 경우 공격자는 토큰을 추론해 사용자의 신원 정보를 탈취할 수 있습니다.
+        - 공격자가 예측할 수 없거나 충분한 안전성이 보장된 난수 생성기(CSPRNG)를 사용하여야 예측 공격을 방지할 수 있습니다.
+        
+    3) CSRF Token 유출
+        - CSRF Token이 제공하는 보안은 토큰이 공격자가 알지 못함을 전제로 하며, 따라서 다른 경로로 제3자에게 노출되지 않도록 주의하여야 합니다.
+        - CSRF Token이 URL의 Query 파라미터로 넘겨지게 되면 이후 다른 링크를 방문하였을 때 Referer 헤더로 토큰이 그대로 노출되고,
+          공격자는 이를 이용해 역으로 사용자를 공격할 수 있게 됩니다.
+        
+
+    
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

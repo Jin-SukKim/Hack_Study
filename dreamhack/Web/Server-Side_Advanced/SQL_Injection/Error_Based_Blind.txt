@@ -1,0 +1,53 @@
+SQL Injection - Error Based Blind :
+    임의적으로 에러 발생을 일으켜 참/거짓을 판단하는 공격 기법입니다.
+
+    앞서 배운 Error Based은 에러 메시지를 통해 데이터가 출력되는 에러를 이용해야 하지만,
+    Error Based Blind 공격 시에는 에러가 발생했다는 여부만을 확인하면 되기 때문에 다른 Runtime Error도 사용가능합니다.
+
+    ex)
+        mysql> select if(1=1, 9e307*2,0);
+        ERROR 1690 (22003): DOUBLE value is out of range in '(9e307 * 2)'
+        
+        mysql> select if(1=0, 9e307*2,0);
+        +--------------------+
+        | if(1=0, 9e307*2,0) |
+        +--------------------+
+        |                  0 |
+        +--------------------+
+        1 row in set (0.00 sec)
+
+    MySQL에서 처리할 수있는 DOUBLE 타입의 최대 값을 넘겨 에러를 발생시키는 연산을 이용한 방법입니다.
+
+    위와 같이 에러가 발생하면 HTTP Response Status number 또는 어플리케이션의 응답의 차이를 통해 에러 발생을 확인하고 참/거짓 여부를 판단하면 됩니다.
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

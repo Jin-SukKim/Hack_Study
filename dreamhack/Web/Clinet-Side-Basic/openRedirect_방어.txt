@@ -1,0 +1,21 @@
+Mitigation : 혀용한 주소에 대해서만 이동 가능
+
+ex
+from urllib.parse import urlparse
+from flask import Flask, request, redirect
+app = Flask(__name__)
+@app.route('/redirect')
+def index():
+	userUrl = request.args.get('url')
+	parseResult = urlparse(userUrl)
+	if parseResult.scheme in ['http', 'https']: # 'https'
+		if parseResult.netloc in ['dreamhack.io', 'test.dreamhack.io']: # 'dreamhack.io'
+			return redirect(userUrl)
+	return "malicious URL"
+
+이동하는 것을 사용자가 알 수 있도록 하는 방법
+	ex)
+		External link warning
+		사용자에게 이동되는 주소를 알리고 동의를 얻는 방법
+
+			

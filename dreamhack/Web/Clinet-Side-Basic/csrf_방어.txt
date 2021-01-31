@@ -1,0 +1,7 @@
+SameSite Cookie
+	- 서버 코드에 검증 로직이 추가되는 방식이라 어쩔 수 없는 오버헤드가 발생
+
+크로스 사이트에서 출발한 요청에 제한적으로 쿠키를 포함시키게 하는 옵션입니다. 총 세 가지(Strict, Lax, Normal) 값을 설정 가능
+	Strict : 모든 크로스 사이트 출발 요청에 해당 쿠키 삽입 x
+	Lax : Link, Prerender, Form GET을 제외한 요청에 쿠키 삽입 x
+	Normal : 기존과 동일하게 모든 요청에 쿠킵 삽입 ㅇ

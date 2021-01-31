@@ -1,0 +1,140 @@
+DBMS 주의사항 :
+    웹어플리케이션과 DBMS를 연동해서 사용할 때 주의해야 할 사항입니다.
+
+    1) 권한문제
+        - DBMS 어플리케이션 작동 권한
+        - DBMS 계정 권한
+
+    2) String Compare
+        - Case sensitive
+        - space로 끝나는 문자열 비교
+    
+    3) Multiple statement
+
+권한문제 :
+    1) DBMS 어플리케이션 작동 권한
+        리눅스 서버에서는 사용자 별로 권한을 나눠서 관리합니다. 
+        서버에서 DBMS를 작동할 때 DBMS 전용 계정(nologin)을 만들어 사용해야 합니다.
+        root계정이나 다른 어플리케이션(e.g. www-data(webservice)) 권한을 사용하게 될 경우 문제가 발생할 수 있습니다.
+
+        계정을 분리하지 않을 경우 DBMS에서 앞장의 Out Of DBMS 내용과 같이
+        파일 시스템, 네트워크 심지어 OS 명령어 등에 접근 가능할 수 있기 때문에 추가적인 Side effect가 발생할 수 있습니다.
+
+    2) DBMS 계정 권한
+        일반적으로 DBMS 내부에 계정과 권한이 존재합니다.
+        웹 어플리케이션에서 DBMS의 root 계정을 사용하거나 여러 서비스에서 같은 DBMS를 사용하는데
+        서비스 별 계정이 분리되지 않은 경우 SQL Injection이 발생하면 해당 계정에서 접근할 수 있는 Database가 많기 때문에 더 큰 피해가 발생합니다.
+
+        어플리케이션에서 기본적으로 DBMS의 root 계정을 사용하지 않는 것이 좋고 서비스/기능 별로 권한이 분리된 계정을 만들어 사용해야 합니다.
+
+String Compare :
+    DBMS 별로 문자열을 비교하는 방식이 다르기 때문에 웹 어플리케이션과 DBMS의 문자열 비교가 달라 문제가 발생하거나 
+    개발자가 생각했던 의도와 다르게 작동하는 경우가 있습니다.
+
+    DBMS를 사용하는 웹 어플리케이션 코드를 작성할 때 발생할 수 있는 문제점을 인지해야 합니다.
+
+    ex) 문제가 발생하는 상황 예시
+        <?php
+        ...
+        // $input = "Admin"; # Case sensitive
+        // $input = "admin "; # space로 끝나는 문자열 비교
+        if($input === "admin") die("can't account lookup"); // filter bypass
+        /*DBMS
+        uid: admin, account_info: secret
+        ...
+        */
+        echo query("select account_info from users where uid='{$input}';");
+
+    1) Case sensitive
+        일부 DBMS에서 비교 연산시 대소문자를 구분하지 않고 비교합니다.
+
+        - MySQL :
+            mysql> select 'a'='A';
+            /*
+            +---------+
+            | 'a'='A' |
+            +---------+
+            |       1 |
+            +---------+
+            */
+
+        - MSSQL :
+            > select 1 from test where 'a'='A';
+            /*
+            -----------
+                    1
+            */
+
+    2) space로 끝나는 문자열 비교
+        일부 DBMS에서 비교 연산시 문자열 길이에 맞게 space(" ")를 padding 후 비교합니다.
+        https://dev.mysql.com/doc/refman/5.6/en/char.html
+
+        - MySQL :
+            mysql> select 'a'='a ';
+            /*
+            +---------+
+            | 'a'='a '|
+            +---------+
+            |       1 |
+            +---------+
+            */
+
+        - MSSQL :
+            > select 1 from test where 'a'='a ';
+            /*
+            -----------
+                    1
+            */
+
+Multiple statement :
+    Multiple statement는 아래 예시와 같이 하나의 쿼리 요청 시 다수의 구문을 사용하는 것을 의미합니다.
+    ex)
+        SELECT * from users where uid=''; INSERT users values(...);
+
+    웹 어플리케이션에서 DBMS로 쿼리를 요청할 때 대부분 Multiple statement를 지원하지 않습니다.
+
+    쿼리 요청 한번에 여러 statement를 처리하지 못하기 때문에 특정 쿼리에서
+    SQL Injection을 찾더라도 해당 쿼리를 벗어나 다른 새로운 쿼리를 실행할 수 없습니다.
+
+    Multiple statement를 지원할 경우 DBMS에서 값을 조회하는 쿼리에서
+    Database를 삭제하거나 SQLite의 경우 attach를 통해 다른 파일에 값을 쓸 수 있습니다.
+
+    예를 들어 SQL Injection으로 select * from users where uid='test';drop table users;#'과 같은 쿼리를 만들 수 있지만 
+    Multiple statement를 지원하지 않을 경우 select statement만 실행됩니다.
+    ex)
+        <?php
+            query("select * from users where uid='{$uid}';");
+
+    ex) Multiple statement를 지원하지 않는 query(), Multiple statement를 지원하는 exec()
+
+        $ cat test.php
+        <?php
+            $db1 = new PDO('sqlite:test1.db');
+            $db2 = new PDO('sqlite:test2.db');
+            $query = 'select 1234;create table test(test int);';
+            $db1->query($query);
+            $db2->exec($query);
+        $ php test.php
+        $ ls -al test1.db test2.db
+        -rw-r--r-- 1 test test    0 Apr 29 11:21 test1.db # create table이 실행되지 않음
+        -rw-r--r-- 1 test test 2048 Apr 29 11:20 test2.db # create table이 실행됨
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

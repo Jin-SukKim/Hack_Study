@@ -1,0 +1,114 @@
+Ruby / Perl :
+
+open :
+    ruby와 perl의 Input/Output Util 함수인 open은 command 처리를 지원합니다.
+    아래 코드는 open 함수의 원형인데, 첫 글자가 | (pipe/vertical bar) 문자일 경우 pipe_open을 통해 커맨드를 처리합니다.
+    ex)
+        // https://github.com/ruby/ruby/blob/0e3b0fcdba70cf96a8e0654eb8f50aacb8024bd4/io.c#L7161-L7175
+        static VALUE
+        check_pipe_command(VALUE filename_or_command)
+        {
+            char *s = RSTRING_PTR(filename_or_command);
+            long l = RSTRING_LEN(filename_or_command);
+            char *e = s + l;
+            int chlen;
+            if (rb_enc_ascget(s, e, &chlen, rb_enc_get(filename_or_command)) == '|') {
+                VALUE cmd = rb_str_new(s+chlen, l-chlen);
+                return cmd;
+            }
+            return Qnil;
+        }
+        /*
+        * 
+        * open("|id")
+        *
+        */
+        static VALUE
+        rb_f_open(int argc, VALUE *argv, VALUE _)
+        {
+            ID to_open = 0;
+            int redirect = FALSE;
+            if (argc >= 1) {
+            CONST_ID(to_open, "to_open");
+            if (rb_respond_to(argv[0], to_open)) {
+                redirect = TRUE;
+            }
+            else {
+                VALUE tmp = argv[0];
+                FilePathValue(tmp);
+                if (NIL_P(tmp)) {
+                redirect = TRUE;
+                }
+                else {
+                        VALUE cmd = check_pipe_command(tmp);
+                        if (!NIL_P(cmd)) {
+                    argv[0] = cmd;
+                    return rb_io_s_popen(argc, argv, rb_cIO);
+                }
+
+Demo :
+    ex)
+        rb_define_global_function("open", rb_f_open, -1);
+
+    rb_define_global_function으로 등록된 open 말고도 다른 함수들도 똑같이 커맨드 인젝션에 취약합니다.
+    ex)
+        static VALUE
+        rb_io_open_generic(VALUE klass, VALUE filename, int oflags, int fmode,
+                const convconfig_t *convconfig, mode_t perm)
+        {
+            VALUE cmd;
+            if (klass == rb_cIO && !NIL_P(cmd = check_pipe_command(filename))) {
+            return pipe_open_s(cmd, rb_io_oflags_modestr(oflags), fmode, convconfig);
+            }
+            else {
+            return rb_file_open_generic(io_alloc(klass), filename,
+                            oflags, fmode, convconfig, perm);
+            }
+        }
+
+    rb_io_s_binread, rb_io_open, rb_io_s_read를 사용한 IO.read, IO.bindread등이 커맨드를 처리해 실행합니다.
+    ex)
+        irb(main):001:0> open("|id > /tmp/1")
+        => #<IO:fd 11>
+        irb(main):002:0> IO.read("/tmp/1")
+        => "uid=1000(dreamhack) gid=1000(dreamhack) groups=1000(dreamhack)\n"
+        irb(main):003:0> IO.read("|id")
+        => "uid=1000(dreamhack) gid=1000(dreamhack) groups=1000(dreamhack)\n"
+        irb(main):004:0> IO.binread("|id")
+        => "uid=1000(dreamhack) gid=1000(dreamhack) groups=1000(dreamhack)\n"
+        irb(main):005:0>
+        ----
+        $ perl -e 'open A, "|id"'
+        uid=1000(dreamhack) gid=1000(dreamhack) groups=1000(dreamhack)
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

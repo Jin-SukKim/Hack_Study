@@ -1,0 +1,59 @@
+디코딩 전 필터링 :
+    Double Encoding 등등
+
+    본래 입력 검증은 디코딩 등의 모든 전처리 작업을 마치고 최종적으로 사용되는 형태에서 이루어져야 합니다.
+    
+    그러나 일부 웹 응용은 웹 방화벽 등의 필터링 기능에 의존하거나, 
+    데이터를 개별 요소를 추출하기 전에 전체 데이터(JSON, Form data 등)에 필터를 가하는 경우가 있습니다.
+
+    ex)
+        웹 방화벽(Apache HTTP Server의 mod_security 등)을 사용하는 응용에서
+        만일 POST 요청으로 데이터를 받는데 파라미터 값에 추가로 URL Decode를 가한다면 방화벽의 XSS 필터링은 무효화됩니다. 
+        마찬가지로 내부 응용에서 XSS 필터 검사를 하고 URL Decode 등을 가한다면 %253E → %3E → < 식으로 필터가 무용지물이 되어버립니다.
+
+    불필요한 인코딩을 줄이고, 응용에서 사용되는 인코딩 방식을 통일하는 등으로 디코딩 전 필터링 취약점을 줄일 수 있습니다.
+
+    ex)
+        <?php
+        $query = $_GET["query"];
+        if (stripos($query, "<script>") !== FALSE) {
+            header("HTTP/1.1 403 Forbidden");
+            die("XSS attempt detected: " . htmlspecialchars($query, ENT_QUOTES|ENT_HTML5, "UTF-8"));
+        }
+        ...
+        $searchQuery = urldecode($_GET["query"]);
+        ?>
+        <h1>Search results for: <?php echo $searchQuery; ?></h1>
+    
+    ex)
+        POST /search?query=%3Cscript%3Ealert(document.cookie)%3C/script%3E HTTP/1.1
+        ...
+        -----
+        HTTP/1.1 403 Forbidden
+        XSS attempt detected: &lt;script&gt;alert(document.cookie)&lt;/script&gt;
+
+    ex)
+        POST /search?query=%253Cscript%253Ealert(document.cookie)%253C/script%253E HTTP/1.1
+        ...
+        -----
+        HTTP/1.1 200 OK
+        <h1>Search results for: <script>alert(document.cookie)</script></h1>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

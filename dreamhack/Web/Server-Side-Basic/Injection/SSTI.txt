@@ -1,0 +1,78 @@
+Server Side Template Injection(SSTI) : 
+    - 템플릿 변환 도중 사용자의 입력 데이터가 템플릿으로 사용돼 발생하는 취약점
+
+    Language        Template Engine
+
+    Python      Jinja2, Mako, Tornado ...
+    PHP         Smarty, Twig, ...
+    JavaScript  Pug, Marko, EJS ...
+
+    대부분의 Template Engine에서 {{2*3}}, ${2*3} 과 같은 문법을 지원합니다.
+        ㄴ 사용자 입력이 실행되는지 확인하는 테스트
+        ㄴ {{ config }} 등의 값을 넣어서 보여져서는 안되는 정보 유출이 됩니다. 이를 통해 공격자는 정보를 활용한 체인 공격을 시도할 수 있습니다. 
+        ㄴ 또는 {{ open(‘filename’).read() }} 등으로 소스를 읽는 공격을 시도할 수 있습니다
+
+    사용자의 입력 데이터가 Template에 직접 사용 될 경우 Template Engine이 실행하는 문법을 사용할 수 있다 = SSTI 취약점 발생
+        
+    Template ex) python에서 Template Engine(jinja2)를 사용해 Render하는 코드
+
+        from flask import ...
+        ...
+        @app.route('/user_info')
+        def user_info():
+            ...		
+            template = '''<html>
+            <body>
+                <h3>유저 아이디: {{user.uid}}</h3>
+                <h3>유저 레벨: {{user.level}}</h3>
+            </body>
+        </html>'''
+            return render_template_string(template, user=user)
+
+        결과 : guest 유저가 접근해 실행
+            유저 아이디: guest
+            유저 레벨: user
+
+실습 (SSTI 취약점 발생 코드)
+
+...
+class Secret(object):
+    def __init__(self, username, password):
+        self.username = username
+        self.password = password
+secret = Secret('admin', secret_password)
+...
+@app.route('/board')
+def board():
+    title = request.form['title']
+    content = request.form['content']
+    template = '''<html>
+    <body>
+        <h3 id="title">{{title}}</h3>
+        <h3 id="content">%s</h3>
+    </body>
+</html>''' % content
+    return render_template_string(template, title=title, secret=secret)
+
+입력 :
+
+    Title : title
+
+    Content : {{secret.password}}
+
+출력 :
+    title
+    
+    banana // id=content는 사용자 값을 %s, 스트링,으로 받기에 template ENgine이 해석하는 {{data}} 형태를 이용해 공격에 사용했다.
+
+    소스코드의 render_template_string함수 실행 시 template로 사용되는 데이터가 사용자의 입력 데이터에 의해 변조될 수 있으며, SSTI가 발생합니다.
+    template Engine이 해석하는 {{ Data }} 형태를 이용하여 공격에 사용할 수 있습니다.
+    secret 변수 객체에 password를 가져오기 위해 Data 에 secret.password 를 넣어 해결할 수 있습니다.
+    content={{ secret.password }}
+
+
+
+
+
+
+

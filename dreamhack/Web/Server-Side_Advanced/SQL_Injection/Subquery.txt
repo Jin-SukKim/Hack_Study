@@ -1,0 +1,101 @@
+SQL Injection - Subquery :
+    서브 쿼리는 하나의 쿼리 내에 또 다른 쿼리를 사용하는 것을 의미합니다.
+
+    ex) 
+        # Main Qeury
+        SELECT 1,2,3,
+        (SELECT 456); # Sub Query
+        /*
+        +---+---+---+--------------+
+        | 1 | 2 | 3 | (SELECT 456) |
+        +---+---+---+--------------+
+        | 1 | 2 | 3 |          456 |
+        +---+---+---+--------------+
+        1 row in set (0.00 sec)
+        */
+
+        - 서브 쿼리를 사용하기 위해서는 (Sub Query)와 같이 괄호를 통해 선언할 수 있습니다.
+        - 서브 쿼리에서는 SELECT 구문 만을 사용할 수 있습니다.
+
+    서브 쿼리를 이용하여 메인 쿼리가 접근하는 테이블이 아닌 다른 테이블에 접근하거나,
+    SELECT 구문이 아닌 구문에서 SQL Injection이 발생하여도 서브 쿼리의 SELECT 구문을 사용하여 테이블의 데이터에 접근할 수 있습니다.
+
+    ex) Subquery 사용 예시
+        1) COLUMNS Clause
+            ex)
+                SELECT username, (SELECT "ABCD") FROM users;
+                /*
+                +----------+-----------------+
+                | username | (select "ABCD") |
+                +----------+-----------------+
+                | admin    | ABCD            |
+                | guest    | ABCD            |
+                +----------+-----------------+
+                2 rows in set (0.00 sec)
+                */
+
+            컬럼 절에서 사용 시 단일 행(Single row), 단일 컬럼(Singloe Column)의 결과가 반환되도록 해야합니다.
+
+            ex)
+                mysql> SELECT username, (SELECT "ABCD" UNION SELECT 1234) FROM users;
+                ERROR 1242 (21000): Subquery returns more than 1 row
+                
+                mysql> SELECT username, (SELECT "ABCD", 1234) FROM users;
+                ERROR 1241 (21000): Operand should contain 1 column(s)
+
+        2) FROM Clause (Inline View)
+            FROM 절에서 사용되는 서브 쿼리를 Inline View라고 칭합니다.
+
+            ex)
+                SELECT * FROM (SELECT *, 1234 FROM users) as u;
+                /*
+                +----------+------+
+                | username | 1234 |
+                +----------+------+
+                | admin    | 1234 |
+                | guest    | 1234 |
+                +----------+------+
+                2 rows in set (0.00 sec)
+                */
+
+            Inline View에서는 다중 행(Multiple Row), 다중 컬럼(Multiple Column)의 결과를 사용할 수 있습니다.
+
+        3) WHERE Clause
+            WHERE 절에서 사용 시 조건 검색을 위해 다중 행(Multiple Row)의 결과를 사용할 수 있습니다.
+
+            ex)
+                SELECT * FROM users 
+                WHERE username IN (SELECT "admin" UNION SELECT "guest");
+                /*
+                +----------+----------+
+                | username | password |
+                +----------+----------+
+                | admin    | admin    |
+                | guest    | guest    |
+                +----------+----------+
+                2 rows in set (0.00 sec)
+                */
+        
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

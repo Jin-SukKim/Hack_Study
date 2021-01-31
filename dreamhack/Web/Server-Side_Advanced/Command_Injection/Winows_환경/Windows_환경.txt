@@ -1,0 +1,83 @@
+Windows 환경의 Command Injection :
+    Windows 환경의 cmd.exe는 Linux(Unix) 계열의 쉘과 다른 부분이 있습니다.
+
+    리눅스 환경의 bash 환경과 같은 행위를 하는 메타 문자 / 명령어를 배우고 윈도우 환경에서만 존재하는 기능에 대해서도 배워보겠습니다.
+
+Linux 환경과 대응하는 쉘 메타문자 :
+    Linux               Windows (cmd, powershell)                       설명
+
+    -A, --A             /c                                              커맨드 라인 옵션
+
+    $PATH               %PATH%                                          환경 변수
+
+    $ABCD               $ABCD (powershell only)                         쉘 변수
+
+    ;                   & (cmd only)                                    명령어 구분자
+                        ; (powershell only)
+
+    echo $(id)          for /f "delims=" %a in                          명령어 치환
+                        ('whoami') do echo %a                           
+
+    > /dev/null         > NUL (cmd only)                                출력 제거
+                        | Out-Null (powershell only)
+
+    command || true     command & rem (cmd only)                        command 명렁어 오류 무시
+                        command -ErrorAction SilentlyContinue 
+                        (powershell Cmdlet only)
+
+Linux 환경과 대응하는 명령어 :
+    Linux 환경에 대응하는 대표적인 Windows 명령어는 아래와 같습니다.
+
+    Linux               Windows                설명
+
+    ls                  dir                  디렉토리(폴더) 파일 목록 출력
+
+    cat                 type                 파일 내용 출력
+
+    cd                  cd                   디렉토리(폴더) 이동
+
+    rm                  del                  파일 삭제
+
+    mv                  move                 파일 이동
+
+    cp                  copy                 파일 복사
+
+    ifconfig            ipconfig             네트워크 설정
+
+    env, export         set                  환경변수 설정
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

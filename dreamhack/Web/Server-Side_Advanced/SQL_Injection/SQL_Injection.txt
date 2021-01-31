@@ -1,0 +1,51 @@
+SQL Injection :
+    SQL Injection을 통해 정보를 탈취하는 공격 기법과 DBMS의 특성에 의해 발생할 수 있는 비정상행위(Trick)등에 대해서 알아보도록 하겠습니다.
+
+    SQL을 사용하는 데이터베이스는 여러 가지 종류가 있습니다.
+    이 강의에서는 MySQL과 SQLite를 중점적으로 다루며, 그 외에도 SQL Server(MSSQL), Oracle, PostgreSQL 에 대해서도 다루도록 하겠습니다.
+
+    1) SQL Injection 공격 기법
+        - Logic
+        - Union
+        - Subquery
+        - Error Based
+        - Blind
+
+    2) SQL DML 구문에 대한 이해
+            - SELECT
+            - UPDATE
+            - INSERT
+            - DELETE
+
+    3) Exploit Technique
+            - DBMS Fingerprinting
+            - System Tables
+            - WAF Bypass
+            - Out Of DBMS
+            - DBMS 주의사항
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

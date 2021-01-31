@@ -1,0 +1,55 @@
+php - escapeshellcmd :
+    아래 php 코드는 Command Injection에 취약한 코드입니다.
+    ex)
+        <?php
+            $cmd = "ls ".$_GET['filename']." 2>&1";
+            system($cmd);
+
+    ex)
+        dreamhack@ubuntu:~$ curl 'http://dreamhack.local/a.php?filename=-al /etc/passwd; id'
+        -rw-r--r-- 1 root root 1602 May  4 04:35 /etc/passwd
+        uid=1000(dreamhack) gid=1000(dreamhack) groups=1000(dreamhack)
+
+    Command Injection을 막기 위해 다른 커맨드를 실행할 수 있는 메타 문자를 모두 이스케이프 처리해 주는 escapeshellcmd를 활용해 패치해 보았습니다.
+    ex)
+        <?php
+            $cmd = "ls ".escapeshellcmd($_GET['filename'])." 2>&1";
+            system($cmd);
+
+    특정 커맨드의 인자로 입력 값을 사용할 때 escapeshellarg 대신 escapeshellcmd를 사용할 경우 공격자는 임의 인자를 추가적으로 입력할 수 있게 됩니다.
+    ex)
+        php > var_dump(escapeshellcmd("a -h -d -e"));
+        string(10) "a -h -d -e"
+        php > var_dump(escapeshellarg("a -h -d -e"));
+        string(12) "'a -h -d -e'"
+        php >
+
+    escapeshellcmd함수를 사용하면 아래와 같이 메타 문자는 사용하지 못하지만, ls 명렁어의 옵션 또는 인자를 조작할 수는 있습니다.
+    ex)
+        dreamhack@ubuntu:~$ curl 'http://dreamhack.local/a.php?filename=-al%20/etc/passwd;%20id'
+        ls: cannot access '/etc/passwd;': No such file or directory
+        ls: cannot access 'id': No such file or directory
+        dreamhack@ubuntu:~$ curl 'http://dreamhack.local/a.php?filename=-al%20/etc/passwd'
+        -rw-r--r-- 1 root root 1602 May  4 04:35 /etc/passwd
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

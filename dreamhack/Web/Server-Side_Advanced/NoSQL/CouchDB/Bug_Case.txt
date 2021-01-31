@@ -1,0 +1,225 @@
+Bug Case :
+    CouchDB에서는 주로 사용자 입력 데이터에 대한 타입 검증이 충분하지 않거나 특수 구성요소로 사용되어지는 값들에 대한 접근으로 인해 취약점이 발생합니다.
+
+    NodeJS에서 CouchDB를 사용할 때 apache에서 개발한 nano 패키지를 주로 사용합니다. 
+    nano 패키지에서 데이터를 가져올 때 get 함수를 사용해 문서의 _id 기반으로 가져오거나 find 함수를 사용해 쿼리 기반으로 값을 가져올 수 있습니다.
+
+    get 함수를 사용할 경우 앞에서 배운 특수 구성요소(_all_docs, _db 등)에 접근할 수 있으며, 이를 통해 의도하지 않은 행위를 수행할 수 있습니다.
+
+    find 함수를 사용할 경우 MongoDB에서 다룬 내용과 같이 오브젝트 타입의 입력 데이터로 처리 시 연산자등을 사용할 수 있으며, 이를 통해 의도하지 않은 행위를 수행할 수 있습니다.
+
+nano.get :
+    아래의 코드는 NodeJS의 nano 패키지의 get 함수 내부 코드입니다.
+    ex) get 함수 내부 코드:
+        // { ..., get: getDoc, ...}
+        // https://github.com/apache/couchdb-nano/blob/befbcd9972520faa8850c9425faeb324aab005f5/lib/nano.js#L543-L552
+        
+        // http://docs.couchdb.org/en/latest/api/document/common.html#get--db-docid
+        function getDoc (docName, qs0, callback0) {
+            const { opts, callback } = getCallback(qs0, callback0)
+            
+            if (missing(docName)) {
+                return callbackOrRejectError(callback)
+            }
+            
+            return relax({ db: dbName, doc: docName, qs: opts }, callback)
+        }
+        // ...
+        
+        function relax (opts, callback) {
+            // ...
+            const req = {
+                method: (opts.method || 'GET'),
+                headers: headers,
+                uri: cfg.url
+            }
+            // ...
+            if (opts.db) {
+                req.uri = urlResolveFix(req.uri, encodeURIComponent(opts.db))
+            }
+            // ...
+            if (opts.path) {
+                req.uri += '/' + opts.path
+            } else if (opts.doc) {
+                if (!/^_design|_local/.test(opts.doc)) {
+                    // http://wiki.apache.org/couchdb/HTTP_Document_API#Naming.2FAddressing
+                    req.uri += '/' + encodeURIComponent(opts.doc)
+                } else {
+                    // http://wiki.apache.org/couchdb/HTTP_Document_API#Document_IDs
+                    req.uri += '/' + opts.doc
+                }
+                
+                // http://wiki.apache.org/couchdb/HTTP_Document_API#Attachments
+                if (opts.att) {
+                    req.uri += '/' + opts.att
+                }
+            }
+            // ...
+                if (typeof callback === 'function') {
+                    // return nothing - feedback via the callback function
+                    httpAgent(req, responseHandler(req, opts, null, null, callback))
+                } else {
+                    // return a Promise
+                    return new Promise(function (resolve, reject) {
+                        httpAgent(req, responseHandler(req, opts, resolve, reject))
+                    })
+                }
+            }
+        }
+
+    init 과정에서 등록된 URL(cfg.url) 뒤에 db 이름을 합친(req.uri = urlResolveFix(req.uri, encodeURIComponent(opts.db))) 후
+    그 뒤에 입력받은 doc 를 추가(req.uri += '/' + encodeURIComponent(opts.doc))해 HTTP GET 요청을 보내는 방식으로 처리됩니다.
+
+    실제 코드는 아래와 같이 작동합니다.
+    ex)
+        > require('nano')('http://{username}:{password}@localhost:5984').use('users').get('guest', function(err, result)
+        { console.log('err: ', err, ',result: ', result) })
+        /*
+        err:  null ,result:  { _id: 'guest',
+            _rev: '1-22a458e50cf189b17d50eeb295231896',
+            upw: 'guest' }
+        */
+        
+        > require('nano')('http://{username}:{password}@localhost:5984').use('users').get('_all_docs', function(err, result)
+        { console.log('err: ', err, ',result: ', result) })
+        /*
+        err:  null ,result:  { total_rows: 3,
+            offset: 0,
+            rows:
+            [ { id: '0c1371b65480420e678d00c2770003f3',
+                key: '0c1371b65480420e678d00c2770003f3',
+                value: [Object] },
+                { id: '0c1371b65480420e678d00c277001712',
+                key: '0c1371b65480420e678d00c277001712',
+                value: [Object] },
+                { id: 'guest', key: 'guest', value: [Object] } ] }
+        */
+
+    CouchDB에서 /{db}/ 하위 경로로 접근할 경우 앞에서 배운 특수 구성요소를 사용할 수 있습니다.
+    nano 패키지의 get 함수 내부에서 _all_docs과 같은 특수 구성요소가 필터링 되어있지 않기 때문에
+    사용자의 입력을 get으로 사용할 경우 의도하지 않은 행위를 수행할 수 있습니다.
+
+nano.find :
+    아래의 코드는 NodeJS의 nano 패키지의 find 함수 내부 코드입니다.
+    ex) find 함수 내부 코드 :
+        // https://github.com/apache/couchdb-nano/blob/befbcd9972520faa8850c9425faeb324aab005f5/lib/nano.js#L941-L952
+        
+        function find (query, callback) {
+            if (missing(query) || typeof query !== 'object') {
+                return callbackOrRejectError(callback)
+            }
+            
+            return relax({
+                db: dbName,
+                path: '_find',
+                method: 'POST',
+                body: query
+            }, callback)
+        }
+
+    CouchDB에서 /{db}/_find로 접근할 경우 JSON 형식의 쿼리를 사용할 수 있습니다.
+    selector안에서 operator($eq, $ne 등)를 사용해 조건 식을 만들 수 있습니다.
+    MongoDB 쿼리와 비슷하며 자세한 정보는
+    https://docs.couchdb.org/en/latest/api/database/find.html#find-selectors
+    에서 확인할 수 있습니다.
+
+    실제 코드는 아래와 같이 작동합니다.
+    ex)
+        > require('nano')('http://{username}:{password}@localhost:5984').use('users').find(
+            {'selector': {'_id': 'guest', 'upw': 'guest'}}
+            , function(err, result){ console.log('err: ', err, ',result: ', result) })
+        /*
+        undefined
+        err:  null ,result:  { docs:
+            [ { _id: 'guest',
+                _rev: '1-22a458e50cf189b17d50eeb295231896',
+                upw: 'guest' } ],
+            bookmark:
+                'g1AAAAA6eJzLYWBgYMpgSmHgKy5JLCrJTq2MT8lPzkzJBYqzppemFpeAJDlgkgjhLADZAxEP',
+            warning:
+                'No matching index found, create an index to optimize query time.' }
+        */
+        
+        > require('nano')('http://{username}:{password}@localhost:5984').use('users').find(
+            {'selector': {'_id': 'admin', 'upw': {'$ne': ''}}} 
+            , function(err, result){ console.log('err: ', err, ',result: ', result) })
+        /*
+        undefined
+        err:  null ,result:  { docs:
+            [ { _id: 'admin',
+                _rev: '2-142ddb6e06fd298e86fa54f9b3b9d7f2',
+                upw: 'secretpassword' } ],
+            bookmark:
+                'g1AAAAA6eJzLYWBgYMpgSmHgKy5JLCrJTq2MT8lPzkzJBYqzJqbkZuaBJDlgkgjhLADVNBDR',
+            warning:
+                'No matching index found, create an index to optimize query time.' }
+        */
+
+    find 함수의 인자로 사용자의 입력이 들어가고, 앞의 예제들 처럼 문자열 타입이 아닌 오브젝트 타입이 들어가게 된다면 
+    operator를 사용해 의도하지 않은 행위를 수행할 수 있습니다.
+
+
+CouchDB에서 /{db}/_find 페이지를 통해MongoDB에서 사용되는 쿼리와 비슷한 형태의 쿼리를 사용할 수 있습니다.
+(https://docs.couchdb.org/en/latest/api/database/find.html#db-find)
+
+밑은 NodeJS에서 CouchDB를 사용하는 코드입니다.
+ex)
+    const express = require('express');
+    const session = require('express-session');
+    const app = express();
+    app.use(express.json());
+    app.use(express.urlencoded( {extended : false } ));
+    app.use(session( {'secret': 'secret'} ));
+    
+    const nano = require('nano')('http://{username}:{password}@localhost:5984');
+    const users = nano.db.use('users');
+    
+    app.post('/auth', function(req,res) {
+        var options = {'selector': {'uid': req.body.uid, 'upw': req.body.upw}};
+        users.find(options, function(err, result){
+            if(err){
+                res.send('error');
+                return;
+            }
+            if(result.docs.length){
+                req.session.auth = true;
+                res.send('success');
+            }else{
+                res.send('fail');
+            }
+        });
+    });
+    
+    const server = app.listen(3000, function(){
+        console.log('app.listen');
+    });
+
+Line 12: 쿼리의 내용이 {'uid': input, 'upw': input} 으로 구성됩니다.
+req.body에 해당하는 부분은 문자열 형식이 아닌 array, object 등의 타입도 넣을 수 있습니다.
+
+문자열 형식이 아닌 object 형태로 삽입이 가능하면 Query Operator를 사용할 수 있고 의도한 흐름과 다르게 작동시킬 수 있습니다.
+
+CouchDB의 _find는 MongoDB 쿼리와 비슷하게 작동하고, 앞서 배운 MongoDB의 실습과 유사한 내용이기 때문에 실습은 생략합니다.
+ex)
+    not equal($ne)연산자를 사용해서 uid 또는 upw를 모르는 상황에서도 원하는 데이터를 조회할 수 있습니다.
+    
+    {"uid": {"$ne": ""} => uid가 ''와 같지 않은 데이터 조회
+    {"upw": {"$ne": ""} => upw가 ''와 같지 않은 데이터 조회
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

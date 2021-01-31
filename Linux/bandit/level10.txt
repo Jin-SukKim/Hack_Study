@@ -1,0 +1,46 @@
+Bandit Level 9 → Level 10
+Level Goal
+The password for the next level is stored in the file data.txt in one of the few human-readable strings, preceded by several ‘=’ characters.
+
+Commands you may need to solve this level
+grep, sort, uniq, strings, base64, tr, tar, gzip, bzip2, xxd
+
+답 :
+    bandit8@bandit:~$ ls
+    data.txt
+    bandit8@bandit:~$ cat data.txt
+    ��T;��M"W�A�8����6�Q���@+�lc�~��i�2Q d�z
+
+                                            �@�XB'�|z#j\Ɍ��&ؽ���k���X}DĪt
+                                                                        T�kT�aK���}Ц7;ܹ��a���1Qit�8ҭ��9�BH�$��Z���
+        a'b~��[0ÙjC��bxBB\u$������U�L�E��n��!�:]ǽ��^Q��-�ת���w(�d�����`��'�
+    aZ�}O6R�p0����a��S+\�Ys���e�a5a�����~!�}Wn�՗�jv���6>f���d��m�u/����x�����%T0�
+                                                                                ,��
+                                                                                    9�+Z]���Dh����8Zpc	$FOxF[���©ս4�N�)����]��/��C��f�YiXf�����K<�:������;W;�y}���vO�
+                                                                �V��0�F��4>��%	�f���g�Ͱ���ZC0�x����#D��J1��������l'E��>�Bs
+    ��Z��!�%�^��t>�	'�a~�P��U�����K}L
+                                    �p�Լ �!�y��A�
+    G�%�d
+        �?\��7����}��'6	,"�0%�6�.��D7�X��Cv�U
+    ��Ð1��ANYwPCpk�Z�Ղ����ǀHu�?�~�H��.բ��A;m$W��y��fJ��,��Xk]E�g)���5�\��_/��oc�X\"'K�'���iN�@�T��W�kS�bh}s�&�����MD�w@�?�}'�Y�Z�Ӱ�71U���S�J�e��Z�P'uP�C�4;b�l�չ8��.�D�Ð}�[�>�2��	��W�J��UMC�@j�b!����֪���Ю}ךCh�Ru�P@j����(�����������	�饳��J��\-A:b�f2��5U������0;l��
+    ?ס}�J<�M��xj3�H��=�q�2��Z$`#�m;����i/a��߿��/�P���Rs �t\����ſ����b*��������폌��S���F��@2�$�7�A�����*�zHR�B�-�@�p��}��e��Z��A�:/p�T��	KA�sCtY���&���Z/1x+�BoU�ej8z�?�����
+    �33\�w��Lnz��wS�^��f}$��͖����Ƒd���:�?�R���X�(i�2��E+n��@�
+    D�I�i��lo�'���k;Z��/����h��1r�)<[�3XB(��<@G�̟���I�{_.��v�%���G ���m0���Ö��!`� ��L��.W��>�o�̎�W������v�e���HD�1KOAN������KQ�f,��7�
+    
+    bandit9@bandit:~$ cat data.txt | grep =
+    Binary file (standard input) matches
+
+    bandit9@bandit:~$ strings data.txt | grep =    // 특정 바이너리 파일에서 문자열만 추출하고 싶을 때
+    ========== the*2i"4
+    =:G e
+    ========== password
+    <I=zsGi
+    Z)========== is
+    A=|t&E
+    Zdb=
+    c^ LAh=3G
+    *SF=s
+    &========== truKLdjsbJ5g7yyJ2X2R0o3a5HQJFuLk
+    S=A.H&^
+
+flag : truKLdjsbJ5g7yyJ2X2R0o3a5HQJFuLk

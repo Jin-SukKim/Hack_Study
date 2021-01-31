@@ -1,0 +1,36 @@
+고전 암호 :
+    고전 암호는 컴퓨터와 같은 고성능 연산 장치가 발명되기 전에, 비교적 간단한 기계와 손 등으로 암복호화를 수행하던 암호를 말합니다.
+    지금은 쉽게 복호화 가능해서 사용 x
+
+    고전 암호는 일반적으로 치환(Substitution)과 전치(Transposition)의 방법으로 설계됩니다.
+        1) 치환 (Substitutio) 
+            - 평문의 문자를 다른 문자로 바꾸는 것
+            - 두 분류
+                ㄴ 단일 문자 치환 암호(Monoalphabetic Substitution Cipher)
+                ㄴ 다중 문자 치환 암호(Polyalphabetic Substitution Cipher)
+
+        2) 전치 (Transposition)
+            - 평문 문자들의 위치를 바꾸는 것
+
+    단순한 고전 암호는 한 가지 원리만을 사용하는 치환 암호(Substitution Cipher) 또는 전치 암호(Transposition Cipher)이고, 복잡한 고전 암호는 두 원리를 모두 사용합니다.
+
+    치환 암호는 단일 문자 치환 암호(Monoalphabetic Substitution Cipher)와 다중 문자 치환 암호(Polyalphabetic Substitution Cipher)로 나누어집니다.
+
+
+키워드 :
+
+    치환(Substitution): 평문의 각 문자를 다른 문자로 치환하는 기법. 평문의 문자와 암호문의 문자가 이루는 대응 관계에 따라 단일 치환 암호, 다중 치환 암호로 구분됨.
+
+    전치(Transposition): 평문을 구성하는 문자들의 순서를 바꾸는 기법.
+
+    전수 키 탐색 공격(Exhaustive Key Search Attack): 키 공간을 전부 탐색하는 공격 방법. 가능한 키의 수가 적으면 효과적일 수 있으나, 현대 암호는 키 공간의 크기가 매우 넓으므로 이를 대상으로 사용하기 어렵다.
+
+    빈도수 분석(Frequency Analysis): 암호문에서 단어가 등장하는 빈도를 분석하여 통계적으로 복호화하는 공격 기법. 특수한 경우에서만 사용될 수 있다.
+
+
+
+
+
+
+
+

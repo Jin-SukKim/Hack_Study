@@ -1,0 +1,55 @@
+Bandit Level 8 → Level 9
+Level Goal
+The password for the next level is stored in the file data.txt and is the only line of text that occurs only once
+
+Commands you may need to solve this level
+grep, sort, uniq, strings, base64, tr, tar, gzip, bzip2, xxd
+
+Helpful Reading Material
+Piping and Redirection https://ryanstutorials.net/linuxtutorial/piping.php
+
+답 :
+    bandit8@bandit:~$ ls
+    data.txt
+    bandit8@bandit:~$ cat data.txt
+    TThRArdF2ZEXMO47TIYkyPPLtvzzLcDf
+    g1VkH2pk3cmr6aY4np1Dcpm0HF7G9IDT
+    UVnZvhiVQECraz5jl8U14sMVZQhjuXia
+    XyeJdbrUJyGtdGx8cXLQST0pwu5cvpcA
+    07KC3ukwX7kswl8Le9ebb3H3sOoNTsR2
+    khecG2RClunkhrgmq4UNB26N5F1yiUwL
+    WBqr9xvf6mYTT5kLcTGCG6jb3ex94xWr
+    LfrBHfAh0pP9bgGAZP4QrVkut3pysAYC
+    qaWWAOOquC3yHnfJI4zvPWzCBdfHQ8wa
+    f0tri5KLH5eiTU0zQOqWvXTsrl1ekqnU
+    PSdVQSeUUBPRZD58WWP0OXLKxSgU3RxX
+    K9D1CLsVCdkodgvJJIt1oHIaiOY1h8hg
+    BccauS9LeE8NUz4HVLXUwE8M1LWisPlG
+    WBqr9xvf6mYTT5kLcTGCG6jb3ex94xWr
+    iwE0KTeKQ8PWihqvjUnpu52YZeIO8Pqb
+    qaWWAOOquC3yHnfJI4zvPWzCBdfHQ8wa
+    0N65ZPpNGkUJePzFxctCRZRXVrCbUGfm
+    cR6riSWC0ST7ALZ2i1e47r3gc0QxShGo
+    TKUtQbeYnEzzYIne7BinoBx2bHFLBXzG
+    8NtHZnWzCA8HswoJSCU7Ojg8nP3eKpsA
+    SzwgS2ADSjP6ypOzp2bIvdqNyusRtrHj
+    5AdqWjoJOEdx5tJmZVBMo0K2e4arD3ZW
+    gqyF9CW3NNIiGW27AtWVNPqp3i1fxTMY
+    flyKxCbHB8uLTaIB5LXqQNuJj3yj00eh
+    w4zUWFGTUrAAh8lNkS8gH3WK2zowBEkA
+            *
+            *
+            *
+    bandit8@bandit:~$ cat data.txt | sort | uniq -u   // print only unique
+    UsvVyFSfZZWbi6wgC7dAFyFuR6jQQUhR
+
+flag : UsvVyFSfZZWbi6wgC7dAFyFuR6jQQUhR
+
+
+
+
+
+
+
+
+

