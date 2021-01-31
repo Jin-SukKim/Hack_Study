@@ -1,1 +1,9 @@
-Hack_Study
+Study about hacking.
+
+Hacking Theory
+  1) Web
+  2) Reverse Engineering
+  3) System
+  
+Wargames 
+ 
