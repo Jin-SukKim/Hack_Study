@@ -1,2 +1,5 @@
 webhacking : host1.dreamhack.games:8300 생성된 서버에 접속
 다른 분야 : nc, telnet 등을 활용해 nc host1.dreamhack.games 8300와 같은 명령어를 실행하여 접속
+
+
+MISC = 기타 분야

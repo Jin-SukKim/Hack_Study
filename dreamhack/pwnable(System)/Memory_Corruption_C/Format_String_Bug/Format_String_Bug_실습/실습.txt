@@ -1,0 +1,83 @@
+Format String Bug - 실습 :
+    ex)
+        // fsb-easy.c
+        #include <stdio.h>
+        
+        int main(void) {
+            int flag = 0x41414141;
+            char buf[32] = {0, };
+            
+            read(0, buf, 31);
+            printf(buf);
+        }
+    // %x means that printf will output its value in hexadecimal format
+    // char	size : 1 byte = 8 bits
+
+    emulator :
+        FSB Easy
+        FLAG 변수의 값을 %x 표시자를 통해 16진수로 출력해보세요!
+
+        bash3.2$ ./fsb1
+        input : 
+
+    답 :
+        정답 : 
+            %x %x %x %x %x %x %x %x %x %x
+
+
+printf(buf)에서 버퍼만 출력하는거면 총 32바이트만 출력되는게 아닌가요?
+printf_stackframe과 변수 flag가 왜 출력되는지 모르겠습니다.
+
+대답 :
+    스택은 항상 변하기때문에, printf(buf) 에서는 esp+4 부터 출력이 됩니다. printf 를 출력할때 esp+4 가 printf_stackframe 입니다.
+    esp = stack의 제일 윗 주소를 가르키는 값
+
+25782025로 출력되는 것이아닌 거꾸로 25207825이런식으로 출력되는 이유도 궁금합니다.
+
+대답 :
+    %x 로 출력을 하시면, 정수형으로 출력하는것이기때문에 리틀엔디언 방식을 사용하는 아키텍쳐에서는 정수형은 거꾸로 저장되고, 거꾸로 출력됩니다.
+    ex : 0x12345678 -> (낮은주소->) 78 56 34 12 (->높은주소) -> 출력 : 78563412
+    순서대로 출력하실려면 %4c 로 출력하시면 됩니다.
+        
+
+%4d와 같이 %뒤에 숫자가 들어가는 이유
+
+ its define how much space are needed for the output. if the character/digit less than what we define (in this case is 5) then the ouput will add left padding with space until it reach the number that define before.
+mostly its used for better formatting like create a table in console, so each row has same width.
+
+
+또 다른 답 :
+    AAAA0Ðýÿ%x%x%x%x%229c%n
+
+    char size = 1 byte
+    buffer[32] size = 1 * 32 * 8 - 1 = 255 (0포함되서)
+    %n은 이전에 출력된 바이트 수를 저장
+    hex 는 하나당 4bit + 4bit = 총 8bit = char size
+
+    “AAAA0Ðýÿ%x%x%x%x%299x%n” 공격 코드에서 229 개의 문자를 출력하여 삽입하는 이유
+    처음에 삽입한 AAAA 문자열의 길이는 4, 0Ðýÿ(auth의 주소)의 길이는 4, 
+    "%x%x%x%x"의 경우 해당 문자열을 길이로 합산하는 것이 아닌 “%x” 포맷 스트링을 통해 출력되는 문자열의 길이가 중요합니다.
+    따라서 최종 공격 코드는 "AAAA0Ðýÿ%x%x%x%x%229x%n"가 맞습니다.
+
+    왜 0Ðýÿ%237x%n으로 하면 안 되고 저렇게 %x 3번 한 뒤에 %234x를 해야 하는지,
+    답 :
+        32비트 기준으로 %x를 3번하게되면 esp로부터 각각 +4, 총 +12가 되어 0Ðýÿ == 0xfffdd030 값이 write되어있는 주소를 참조하게하여 %n 할 위치를 임의로 지정할 수 있게됩니다.
+    
+    %n은 이전에 출력된 바이트 수를 저장한다고 하는데, 그러면 0Ðýÿ(4)+%x%x%x%234x(237)=241 바이트 아닌가요? 어떻게 255바이트가 되는지 궁금합니다.
+    답 :
+        %x를 통해 출력되는 바이트 수도 계산에 포함해주셔야 하며 padding을 지정하지 않으시면 스택 상황에 따라 %x가 출력하는 바이트 수는 달라질 수 있습니다.
+        예를들어 %x가 4바이트를 출력할 경우 %x%x%24x%n 는 4 + 4 + 24 = 32를 esp+16의 포인터에 저장하게됩니다.
+
+    
+
+또 다른 답 :
+    AAAA %x %x %x %x
+
+
+
+
+
+
+
+
+

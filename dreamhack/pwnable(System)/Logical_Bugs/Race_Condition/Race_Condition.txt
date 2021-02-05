@@ -1,0 +1,85 @@
+Race Condition : 
+    레이스 컨디션은 프로세스 혹은 스레드 간 자원 관리 실수로 인해 발생하는 상태입니다.
+
+    서로 다른 스레드에서 뮤텍스가 걸려 있지 않아 공유 메모리에 접근하는 경우 프로그램의 가정을 파괴할 수 있습니다.
+    이외에도 다양한 환경에서 발생할 수 있으며, 정확히 관리하지 않으면 프로그래머가 실수로 발생시키기 쉬운 오류입니다.
+
+    사진은 레이스 컨디션의 이해를 돕기 위한 그림입니다.
+
+    첫 번째 스레드에서 len 변수를 0으로 초기화하고 20 바이트의 배열을 생성한 후 len 변수에 20을 더합니다.
+    이후에 스택 버퍼 오버플로우를 방지하기 위해 len 변수가 버퍼의 크기보다 크다면 프로그램을 종료하는 코드가 존재합니다.
+    그러나 len 변수의 값은 20이기 때문에 해당 조건문은 통과하게됩니다.
+    그리고 두 번째 스레드가 실행되면 len 값은 40이 되며, 
+    이후 첫 번째 스레드에서 len 변수가 read 함수의 세 번째 인자로 전달돼 스택 버퍼 오버플로우가 발생합니다.
+
+    사진과 같이 단일 스레드에서는 취약점이 발생하지 않는 코드라도 두 개 이상의 스레드가 자원을 동시에 참조할 수 있다면 취약점이 발생할 수 있습니다.
+
+    ex)
+        // gcc -o race1 race1.c -pthread
+        #include <stdio.h>
+        #include <pthread.h>
+        #include <time.h>
+        
+        int count = 0;
+        
+        void* counting() {
+            for(int i=0;i<10000000;i++) {
+                count += i;
+            }
+        }
+        
+        int main(int argc, char* argv[]) {
+            pthread_t thread_id[3] = {0,};
+            
+            pthread_create(&thread_id[0], NULL, counting, (void*)NULL);
+            pthread_create(&thread_id[1], NULL, counting, (void*)NULL);
+            pthread_create(&thread_id[2], NULL, counting, (void*)NULL);
+            
+            sleep(1);
+            printf("%d\n", count);
+            
+            return 0;
+        }
+
+    race1.c는 전역 변수인 count를 여러 개의 스레드가 덧셈 연산을 하는 예제입니다.
+    counting 함수는 반복 횟수가 매우 많기 때문에 코드가 모두 실행되는데 시간이 걸립니다.
+    그렇기 때문에 반복문이 끝나기 전에 다른 스레드가 count 전역 변수를 참조하여 덧셈 연산을 하게 되면서 결과가 달라지게 됩니다.
+
+    다음은 race1의 실행 결과입니다.
+    ex)
+        $ ./race1
+        2006922143
+        $ ./race1
+        2116053909
+        $ ./race1
+        -2012457799
+        $ ./race1
+        -1193905934
+
+    매 실행마다 결과가 다른 것을 확인할 수 있습니다.
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

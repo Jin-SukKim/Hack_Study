@@ -1,0 +1,101 @@
+Type Confusion in C++ :
+    프로그램이 실행되는 도중 형 변환 과정에서 객체의 형태를 검사하는 dynamic_cast와 달리,
+    static_cast와 reinterpret_cast에는 이러한 검증이 존재하지 않아 Type Confusion 취약점이 발생할 수 있습니다.
+    ex)
+        // g++ -o wrong_cast wrong_cast.cpp
+        #include <iostream>
+        #include <string.h>
+        using namespace std;
+        
+        class Parent 
+        {
+        public:
+        };
+        
+        class Print: public Parent
+        {
+        public:
+            virtual void print_str(char *str) {
+                cout << str << endl;
+            }
+            
+            ~Print() {
+            }
+        };
+        
+        class Read: public Parent
+        {
+        public:
+            virtual void read_str(char *str) {
+                cout << "Input: " << str << endl;
+                cin >> str;
+                cout << "Data: " << str << endl;
+            }
+            
+            ~Read() {
+            }
+        };
+        
+        int main()
+        {
+            
+            Parent *p1 = new Print();
+            Parent *p2 = new Read();
+            Print *b1;
+            
+            char buf[256];
+            strcpy(buf, "I'm print_str");
+            
+            b1 = static_cast<Print*>(p1);
+            
+            b1->print_str(buf);
+            
+            b1 = static_cast<Print*>(p2);
+            b1->print_str(buf);
+            
+            return 0;
+        }
+
+    wrong_cast는 Parent 클래스로부터 파생된 Print, Read 객체를 static_cast를 이용한 형 변환을 통해 사용하는 예제입니다.
+    line 55를 보면, Read 클래스 포인터를 저장하고 있는 p2를 Print * 타입으로 형 변환한 이후 b1 포인터 변수에 저장합니다.
+    하지만 b1은 Read 클래스의 구조를 지니고 있는 객체를 가리키고 있기 때문에 이후 print_str를 호출했을 때 print_str가 아닌 의도치 않은 동작이 수행됩니다.
+
+    다음은 wrong_cast의 실행 결과입니다.
+    ex)
+        $ ./wrong_cast
+        I'm print_str
+        Input: I'm print_str
+        1234
+        Data: 1234
+
+    line 56에서 print_str 함수를 호출했을 때 Read 클래스의 read_str이 호출된 것을 확인할 수 있습니다.
+
+    이처럼, 객체의 형태를 적절히 검증하지 않고 형 변환을 수행하게 되면 프로그램이 의도치 않은 흐름으로 동작해 프로그램에 취약점이 발생할 수 있습니다.
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

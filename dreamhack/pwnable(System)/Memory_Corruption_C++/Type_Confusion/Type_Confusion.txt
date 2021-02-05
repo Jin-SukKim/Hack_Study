@@ -1,0 +1,61 @@
+Type confusion :
+    Type Confusion은 프로그램에서 사용하는 변수나 객체를 선언 혹은 초기화되었을 때와 다른 타입으로 사용할 때 발생하는 취약점입니다. 
+    C와 C++로 만들어진 프로그램에 Type Confusion 취약점이 존재한다면
+    메모리 커럽션이 유발되어 공격자가 프로그램을 공격하는 것이 가능할 수 있습니다. 
+
+    C++는 C에 클래스 등 객체 지향 언어의 개념을 추가하여 발전된 언어입니다.
+    C를 이용한 프로그램에서 발생하는 Type Confusion 유형들이 C++에서도 발생할 수 있기 때문에, 
+    우선 간단한 C의 Type Confusion 예제를 통해 이 취약점에 대해 살펴보도록 하겠습니다.
+
+    type_confusion1은 정수를 입력받아 해당 값을 출력해주는 예제입니다.
+    ex)
+        //gcc -o type_confusion1 type_confusion1.c
+        #include <stdio.h>
+        
+        int main(void){
+            int val;
+            
+            scanf("%d", &val);
+            puts(val);
+        }
+
+    하지만 오른쪽 소스 코드의 line 7을 보면 int형 변수 val을 char *형 포인터를 인자로 받는 puts 함수의 인자로 사용합니다.
+    때문에 Type Confusion이 발생해 메모리에 존재하지 않는 주소를 입력한다면 다음과 같이 프로그램이 비정상 종료됩니다.
+    ex)
+        $ ./type_confusion1
+        1234
+        Segmentation fault (core dumped)
+        $ 
+
+    이와 같이 선언된 변수에 대한 자료형 혹은 구조체의 잘못된 사용으로 인해 Type Confusion이 발생할 수 있습니다.
+    다음으로 C++에서 발생할 수 있는 Type Confusion의 대표적 유형에 대해 살펴보도록 하겠습니다.  
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

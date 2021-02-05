@@ -1,0 +1,137 @@
+Race Condition - Thread (레이스 컨디션 - 스레드) :
+    스레드간 공유 자원을 적절히 동기화하지 않았을 때 레이스 컨디션이 발생할 수 있습니다.
+    ex)
+        // gcc -o race2 race2.c -fno-stack-protector -lpthread -m32
+        #include <pthread.h>
+        #include <stdio.h>
+        #include <unistd.h>
+        #include <stdlib.h>
+        #include <string.h>
+        
+        int len;
+        
+        void giveshell() {
+            system("/bin/sh");
+        }
+        
+        void * t_function() {
+            int i = 0;
+            while (i < 10000000) {
+                len++;
+                i++;
+                sleep(1);
+            }
+        }
+        
+        int main() {
+            char buf[4];
+            int gogo;
+            int idx;
+            pthread_t p_thread;
+            
+            setvbuf(stdin, 0, 2, 0);
+            setvbuf(stdout, 0, 2, 0);
+            // setvbuf() 함수는 지정된 스트림을 위한 버퍼링 전략과 버퍼 크기에 대한 제어를 허용합니다. setvbuf(FILE *stream, char *buf, int type, size_t size)
+
+            while (1) {
+                printf("1. thread create\n");
+                printf("2. read buffer\n");
+                printf("> ");
+                
+                scanf("%d", &idx);
+                
+                switch (idx) {
+                case 1:
+                    pthread_create( &p_thread, NULL, t_function, (void * ) NULL);
+                    break;
+                
+                case 2:
+                    printf("len: ");
+                    scanf("%d", &len);
+                    if(len > sizeof(buf)) {
+                        exit(0);
+                    }
+                    sleep(4);
+                    printf("Data: ");
+                    read(0, buf, len);
+                    printf("Len: %d\n", len);
+                    printf("buf: %s\n", buf);
+                    break;
+                
+                case 3:
+                    if (gogo == 0x41414141) {
+                        giveshell();
+                    }
+                }
+            }
+            return 0;
+        }
+    //setvbuf 함수를 사용하게 되면 입출력(stdin, stdout)에 존재하는 버퍼의 옵션을 수정할 수 있습니다. 버퍼를 조정하게 되면 입출력의 단위를 수정하기 때문에 입출력 처리의 기준을 바꿀 수 있게 됩니다.
+
+    race2.c는 세 개의 메뉴가 존재합니다.
+    1번 메뉴는 t_function 함수를 스레드로 실행합니다. 
+    t_function 함수는 len 전역 변수를 i가 10000000 값에 도달할 때 까지 1씩 증가 시킵니다. 
+    2번 메뉴는 len 전역 변수에 입력을 받고 buf 배열의 크기보다 크다면 프로그램을 종료하여 스택 버퍼 오버플로우가 발생하지 않도록 하는 조건이 존재합니다.
+    그리고 8초 후 buf 에 입력을 받습니다. 3번 메뉴는 gogo 변수가 0x41414141이라면 giveshell 함수를 호출합니다.
+
+    len 변수에 뮤텍스가 걸려있지 않기 때문에 스레드를 생성해 t_function 함수를 실행하면 여러 스레드가 len 변수를 동시에 참조할 수 있게 됩니다.
+
+    메뉴 2번에서 len 변수는 4보다 클 수 없습니다.
+    4를 입력하고 sleep이 호출되어 대기 중일 때 다른 스레드에서 t_function 함수가 실행되고 있다면 len 값은 증가하게 됩니다.
+    그러므로 read 함수가 호출될 때의 len 값은 버퍼의 크기보다 큰 값이 됩니다.
+    따라서 버퍼 오버플로우가 발생해 buf 뒤에 있는 gogo 변수를 원하는 값으로 덮을 수 있습니다.
+
+    2번 메뉴에서 4를 입력하고 4 바이트 이후에 4개의 A를 입력하면 gogo 변수를 0x41414141로 조작할 수 있습니다.
+
+    이후에 3번 메뉴를 호출하면 셸을 획득할 수 있습니다.
+    ex)
+        $ ./race2
+        1. thread create
+        2. read buffer
+        > 1
+        1. thread create
+        2. read buffer
+        > 2
+        len: 4
+        Data: BBBBAAAA
+        Len: 11
+        buf: BBBBAAAA
+        1. thread create
+        2. read buffer
+        > 3
+        $ id
+        uid=1001(theori) gid=1001(theori) groups=1001(theori)
+
+
+
+pthread_create : 
+    스레드를 생성 (pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine)(void*), void *arg) 
+    현재 실행되고 있는 프로세스에서 새로운 스레드를 생성하는 함수 1. thread : 성공적으로 함수가 호출되면 이곳에 thread ID가 저장됩니다. 
+    0 2. attr : 스레드의 특성을 정의합니다. 기본적으로 NULL을 지정합니다. 
+    만약 스레드의 속성을 지정하려고 한다면 pthread_attr_init등의 함수로 초기화해야함. 
+    3. start_routine : 어떤 로직을 할지 함수 포인터를 매개변수로 받습니다. 
+    4. arg : start_routine에 전달될 인자를 말합니다. 
+    start_routine에서 이 인자를 변환하여 사용합니다.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,46 @@
+char *read_data(int fd) {
+	char *buf;
+	int length = get_int(fd); // length는 사용자가 입력할 수 있는 값입니다.
+	if(!(buf = (char *)malloc(MAX_SIZE))) // #define MAX_SIZE 0x8000
+		exit(-1);
+	if(length < 0 || length + 1 >= MAX_SIZE) {
+		free(buf);
+		exit(-1);
+	}
+	if(read(fd, buf, length) <= 0) {
+		free(buf);
+		exit(-1);
+	}
+	
+	buf[length] = '\0';
+	// \0 is zero character. In C it is mostly used to indicate the termination of a character string.
+	
+    return buf;
+}
+
+Q1) 어떤 line이 취약할까요? 답 : B
+    A) 5 
+    B) 8 
+    C) 9 
+    D) 13 
+    E) 14 
+    F) 18
+
+풀이 :
+    line 8의 if문을 보면, length < 0 || length + 1 > = MAX_SIZE인 경우 길이 검사를 통과하게 됩니다.
+    length는 int형 변수이므로 length에 int형의 최대 값인 0x7FFFFFFF를 넣어 보겠습니다.
+    이 경우 length < 0은 거짓이고 length + 1은 0x80000000이 되므로 음수로 취급되어 length + 1 >= MAX_SIZE의 검사도 거짓이 됩니다.
+    따라서 line 13에서 read(fd, buf, 0x7FFFFFFF)가 호출되어 힙 오버플로우가 발생하게 됩니다.
+
+    int size = 2^-31 ~ 2^31-1 (-2,147,483,648 ~ 2,147,483,647)
+    int size to hex = (-0x80000000 ~ 0x7FFFFFFF)
+
+    그래서 int len = 0x7FFFFFFF 일떄 음수가 아니지만 +1의 경우 오버플로우 발생해 제일 작은수로 바뀐다.
+    
+
+
+
+
+
+
+

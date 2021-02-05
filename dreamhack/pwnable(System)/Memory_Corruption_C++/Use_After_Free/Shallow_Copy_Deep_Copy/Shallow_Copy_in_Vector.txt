@@ -1,0 +1,95 @@
+Shallow copy in vector :
+    vector를 사용할 때 또한 문제가 발생할 수 있습니다.
+    ex)
+        // g++ -o shallow_vec shallow_vec.cpp 
+        #include <iostream>
+        #include <vector>
+        #include <string.h>
+        using namespace std;
+        
+        class A
+        {
+        public:
+            int age;
+            char *name;
+            
+            A(int _age, char *_name) {
+                age = _age;
+                name = new char [strlen(_name)+1];
+                strcpy(name,_name);
+            }
+            
+            A(const A& s) 
+            {
+                age = s.age;
+                name = s.name;
+                cout << "COPY!!" << endl;
+            }
+            
+            ~A() {
+                delete name; 
+            }
+            
+            void print()
+            {
+                cout << "Name: " << name << endl;
+                cout << "Age: " << age << endl;
+            }
+        };
+        
+        int main()
+        {
+            std::vector<A> my_vec;
+            cout << "CREATE CLASS" << endl;
+            A a(20, (char *)"DreamHack");
+            
+            cout << "VECTOR!" << endl;
+            my_vec.push_back(a);
+            cout << "GOODBYE" << endl;
+            getchar();
+            return 0;
+        }
+    
+    shallow_vec은 얕은 복사를 사용하고, A 타입의 컨테이너를 생성한 후 push_back 함수를 통해 A 클래스인 a를 요소로 추가합니다.
+    컨테이너에 요소를 추가할 때는 복사 생성자가 호출되기 때문에 이는 같은 메모리를 공유하게 됩니다.
+    이후 리턴 명령이 실행되어 프로그램이 종료되면 A 클래스의 소멸자가 호출되어 delete name을 통해 해당 영역이 해제되고, 
+    컨테이너 또한 소멸자를 호출하여 해당 영역을 해제하기 때문에 Double Free 버그가 발생합니다.
+    ex)
+        $ ./shallow_vec 
+        CREATE CLASS
+        VECTOR!
+        COPY!!
+        GOODBYE
+        *** Error in `./shallow_vec': double free or corruption (fasttop): 0x00000000011c3030 ***
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

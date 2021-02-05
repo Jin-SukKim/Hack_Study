@@ -1,0 +1,51 @@
+Off-by-one :
+    ex)
+        // off-by-one-1.c
+        #include <stdio.h>
+        void copy_buf(char *buf, int sz) {
+            char temp[16];
+            
+            for(i = 0; i <= sz; i++)
+                temp[i] = buf[i];
+        }
+
+        int main(void) {
+            char buf[16];
+            
+            read(0, buf, 16);
+            copy_buf(buf, sizeof(buf));
+        }
+
+    Off-by-one 취약점은 경계 검사에서 하나의 오차가 있을 때 발생하는 취약점입니다.
+    이는 버퍼의 경계 계산 혹은 반복문의 횟수 계산 시 < 대신 <=을 쓰거나, 0부터 시작하는 인덱스를 고려하지 못할 때 발생합니다.
+
+    off-by-one-1.c는 buf에 16바이트 문자열을 입력받은 후 buf와 sizeof(buf)의 값을 copy_buf 함수의 인자로 전달합니다.
+    copy_buf함수에서는 임시 버퍼 temp를 할당하고 반복문을 통해 buf의 데이터를 복사합니다.
+    그러나 반복문은 i가 0일 때부터 sz일 때까지 총 sz + 1번 반복하게 됩니다.
+    따라서 sz + 1만큼 데이터가 복사되고, off-by-one 취약점이 발생합니다.
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

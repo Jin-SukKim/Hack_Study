@@ -1,0 +1,118 @@
+Container Overflow :
+    C++에서는 데이터 관리를 편하게 하기 위해 벡터, 큐와 같은 여러 종류의 컨테이너들을 지원합니다.
+    이러한 컨테이너들은 사용자가 직접 할당한 버퍼들보다는 훨씬 추상화되어있지만,
+    올바르게 사용하지 않는다면 버퍼 오버플로우가 발생할 수 있습니다.
+
+    특히, std::memcpy, std::memmove, std::memset과 같이 메모리를 별도의 검증 없이 할당하거나 복사하는 함수에 주의해야 합니다.
+    이런 함수들은 보통 인자로 길이를 지정해줍니다.
+    만약 지정된 길이가 컨테이너의 크기를 넘어선다면 버퍼 오버플로우를 발생시킵니다.
+    ex1)
+        // g++ -o container-1 container-1.cpp
+        #include <algorithm>
+        #include <vector>
+        #include <iostream>
+        
+        void f(const std::vector<int> &src) {
+                std::vector<int> dest(5);
+                std::copy(src.begin(), src.end(), dest.begin());
+        }
+
+        int main(void){
+                int size = 0;;
+                std::vector<int> v;
+                std::cin >> size;
+                v.resize(size);
+                v.assign(size, 0x41414141);
+                f(v);
+        }
+
+    container-1은 f 함수의 인자로 입력받은 src 벡터를 새로 생성한 dest 벡터에 복사합니다.
+    이 때 std::copy 함수를 통해서 복사하는데, 이는 src 의 내용을 dest 에 바로 복사합니다. 
+    만약 src의 크기가 dest보다 크다면 버퍼 오버플로우가 발생합니다.
+    ex1)
+        $ ./container-1
+        10000
+        Segmentation fault (core dumped)
+
+    ex2)
+        // g++ -o container-2 container-2.cpp
+        #include <algorithm>
+        #include <vector>
+        #include <iostream>
+        
+        void f(const std::vector<int> &src) {
+                std::vector<int> dest(src);
+                std::copy(src.begin(), src.end(), dest.begin());
+        }
+        
+        int main(void){
+                int size = 0;;
+                std::vector<int> v;
+                std::cin >> size;
+                v.resize(size);
+                v.assign(size, 0x41414141);
+                f(v);
+        }
+
+    container-2와 같이 dest의 선언부에 src를 명시하면 버퍼 오버플로우 취약점을 막을 수 있습니다.
+    ex2)
+        $ ./container-2
+        10000       
+
+    ex3)
+        // g++ -o container-3 container-3.cpp
+        #include <algorithm>
+        #include <vector>
+        int main() {
+            std::vector<int> v;
+            std::fill_n(v.begin(), 10, 0x42);
+        }
+
+    container-3의 경우 int형 벡터 v를 선언한 후, 
+    별다른 초기화나 크기 지정 없이 std::fill_n 함수를 통해 10개의 배열 요소를 0x42로 초기화합니다.
+    ex3)
+        std::fill_n 함수의 인자
+        first	-	값을 바꿀 배열 요소들의 시작 주소
+        count	-	바꿀 요소의 개수
+        value	-	대입할 값
+
+    하지만 container-3에서는 벡터를 선언만 할 뿐 벡터의 크기를 지정해서
+    초기화하지 않았기 때문에 std::fill_n이 호출되었을 때 버퍼 오버플로우가 발생합니다.
+    container-3을 실행해보면 다음과 같이 프로그램이 비정상 종료되는 것을 확인할 수 있습니다.
+    ex3)
+        $ ./container-3
+        Segmentation fault (core dumped)
+
+    ex4)
+        // g++ -o container-4 container-4.cpp
+        #include <algorithm>
+        #include <vector>
+        int main() {
+            std::vector<int> v(10);
+            std::fill_n(v.begin(), 10, 0x42);
+        }
+
+    해당 코드에서 발생하는 취약점을 막기 위해서는 container-4와 같이 벡터를 선언할 때 크기를 지정해주어야 합니다.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

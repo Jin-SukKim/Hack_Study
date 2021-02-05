@@ -1,0 +1,108 @@
+Smart Pointers :
+    UAF가 발생하는 또 다른 원인 중 하나는 스마트 포인터를 올바르게 사용하지 않을 때입니다.
+
+    std::unique_ptr이나 std::shared_ptr과 같은 자료형으로 정의된 스마트 포인터들은
+    직접 메모리를 동적으로 할당하고 해제하는 일 없이 메모리 관리를 자동으로 해 메모리 릭 등의 취약점이 발생하지 않게 합니다.
+    그러나 이러한 스마트 포인터를 사용할 때 주의할 점은, 같은 메모리를 서로 다른 두 개의 스마트 포인터가 가리키게 해서는 안 된다는 것입니다.
+
+    물론 여러 스마트 포인터 객체가 같은 포인터 값을 가리키게 할 수 있습니다.
+    그러나 기존의 스마트 포인터를 통해 새로운 포인터를 생성하는 것이 아니라 객체에서 새로운 스마트 포인터를 생성한다면 UAF가 발생할 수 있습니다.
+    ex)
+        // g++ -o smart-1 smart-1.cpp -std=c++11
+        #include <memory>
+        
+        int main() {
+            int* i = new int;
+            std::shared_ptr<int> p1(i);
+            std::shared_ptr<int> p2(i);
+        }
+    
+    smart-1의 경우, p1과 p2는 서로 다른 스마트 포인터이기 때문에 새로 생성된 객체 i에 대해 각각 다른 레퍼런스 카운트를 가지고 있습니다. 
+    따라서 함수 main이 종료될 때 p1과 p2가 사라지게 되고, 관리하고 있는 객체 i를 각 포인터마다 해제하기 때문에 Double Free 버그가 발생하게 됩니다.
+
+    smart-2는 조금 더 복잡한 예제입니다. 
+    ex)
+        // g++ smart-2 smart-2.cpp
+        #include <iostream>
+        #include <memory>
+        
+        struct B {
+                virtual ~B() = default; // polymorphic object
+                // ...
+        };
+        struct D : B {};
+        
+        void g(std::shared_ptr<D> derived){
+                std::cout << "hi im g!" << std::endl;
+        };
+        
+        int main(void) {
+                std::shared_ptr<B> poly(new D);
+                // ...
+                g(std::shared_ptr<D>(dynamic_cast<D *>(poly.get())));
+        }
+
+    객체 B와 이를 상속하고 있는 객체 D가 존재합니다.
+    또, 함수 g의 인자로 std::shared_ptr<D> 형의 값을 받습니다.
+
+    함수 main에서는 D의 인스턴스를 생성하고 이를 std::shared_ptr<B> 형의 스마트 포인터 poly에 저장하게 됩니다.
+    따라서 이 시점에서 poly는 D의 인스턴스를 가리키고 있습니다.
+
+    그 다음 함수 g를 호출하기 위해 B 형으로 선언된 poly를 형 변환합니다. 
+    그러나 이 때 std::shared_ptr<D> 형의 인자를 만들기 위해 poly 스마트 포인터가 관리하고 있는 객체를 직접 받아옵니다.
+    이후 받아온 객체를 dynamic_cast를 이용해 형 변환한 후, 새로운 스마트 포인터를 생성해 함수 g의 인자로 전달합니다.
+
+    이 상황은 이전에 살펴본 예제와 동일합니다.
+    poly와 함수 g의 인자로 전달하기 위해 만든 새로운 스마트 포인터는 서로 다른 레퍼런스 카운트를 가지고 있고, 
+    line 15에서 new D를 통해 만든 인스턴스를 각각 가리킵니다.
+    따라서 함수 g의 호출이 끝날 때 poly가 가지고 있는 포인터는 해제됩니다.
+    ex)
+        $ ./smart-2
+        hi im g!
+        Segmentation fault (core dumped)
+
+    이와 같은 문제가 발생하는 걸 막기 위해서는 기존의 스마트 포인터를 바탕으로 새로운 스마트 포인터를 만들어야 합니다.
+    이전 예제에서 살펴봤듯이 smart-1은 같은 객체를 서로 다른 스마트 포인터가 가리키게 되어 UAF 취약점이 발생하는 코드입니다.
+
+    ex)
+        // g++ -o smart-3 smart-3.cpp -std=c++11
+        #include <memory>
+        int main() {
+            std::shared_ptr<int> p1 = std::make_shared<int>();
+            std::shared_ptr<int> p2(p1);
+        }
+
+    이를 안전하게 하기 위에서는 smart-3의 line 6과 같이 기존 스마트 포인터를 통해 새로운 포인터를 만들어야 합니다. 
+    이와 같이 포인터를 만들면 std::shared_ptr 클래스 내부에 미리 정의된 생성자를 통해 두 개의 포인터가 같은 레퍼런스 카운트를 공유하게 됩니다. 
+    이로 인해 smart-1에서 발생하였던 UAF를 방지할 수 있습니다.
+
+    다음으로 객체의 할당 혹은 복사에서 발생할 수 있는 Shallow Copy로 인한 UAF 문제에 대해 살펴보도록 하겠습니다.
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
