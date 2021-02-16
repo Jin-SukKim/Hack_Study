@@ -1,0 +1,29 @@
+암호 분석(Cryptanalysis) :
+    암호 분석(Cryptanalysis)은 암호 시스템에서 취약점을 찾고, 이에 대한 공격 기술을 연구하는 분야입니다.
+
+    DES를 비롯한 다양한 블록 암호를 취약하게 만든 차분 공격(Differential Cryptanalysis)과 선형 공격(Linear Cryptanalysis), 
+    부적절한 RSA의 키 생성 과정을 이용하여 수 백만개의 스마트 카드 기기를 공격했던 Coppersmith's Attack,
+    Sony의 PlayStation3이 해킹당하는 계기가 되었던 전자 서명에서의 임시값 재사용(Nonce Reuse)등 역사적으로 많은 암호 시스템들이 암호 분석에 의해 공격받았습니다.
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

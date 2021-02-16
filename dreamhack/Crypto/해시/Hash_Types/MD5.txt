@@ -1,0 +1,56 @@
+MD5 :
+    MD5는 Ronald Lorin Rivest가 1991년에 만들어낸 해시 함수입니다.
+    이 코스를 작성하는 2020년 기준으로는 다양한 취약점이 발견되어 더는 안전한 해시 함수로 여겨지지 않지만, 몇몇 구형의 시스템에는 아직 MD5가 사용되고 있습니다.
+
+    MD5 해시 함수는 임의 입력으로부터 128비트(=16바이트)의 값을 생성하는 함수입니다. 
+    임의 길이의 입력을 블록 암호와 비슷하게 512비트 단위로 쪼갠 후 연산을 거쳐 값을 생성합니다.
+
+    Python에서 제공되는 hashlib 모듈에는 MD5를 포함한 다양한 해쉬 함수들이 이미 구현되어 있습니다.
+    아래에 간단한 예시가 구현되어 있습니다.
+
+    ex)
+        #!/usr/bin/env python3
+        # Name: md5.py
+        import hashlib
+        
+        print(hashlib.md5(b'dreamhack').hexdigest()) # str, 298d75fe864c08e3a68dd1da1483654d
+        print(hashlib.md5(b'dreamhacc').hexdigest()) # str, 02ac31c7f653161b28554a383ba36bae
+        
+        # MD5 hash of file 
+        with open('/path/to/file', 'rb') as f:
+            print(hashlib.md5(f.read()).hexdigest())
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
