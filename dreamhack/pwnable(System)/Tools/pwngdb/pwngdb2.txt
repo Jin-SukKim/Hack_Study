@@ -1,0 +1,246 @@
+pwngdb :
+    find :
+        find 명령어를 사용하여 문자열 혹은 주소를 검색할 수 있습니다.
+        ex)
+            gdb-peda$ x/23i main
+                0x4005b6 <main>:	push   rbp
+                0x4005b7 <main+1>:	mov    rbp,rsp
+                0x4005ba <main+4>:	sub    rsp,0x10
+                0x4005be <main+8>:	mov    edi,0x100
+                0x4005c3 <main+13>:	call   0x4004a0 <malloc@plt>
+                0x4005c8 <main+18>:	mov    QWORD PTR [rbp-0x10],rax
+                0x4005cc <main+22>:	mov    rax,QWORD PTR [rbp-0x10]
+                0x4005d0 <main+26>:	mov    edx,0xff
+                0x4005d5 <main+31>:	mov    rsi,rax
+                0x4005d8 <main+34>:	mov    edi,0x0
+                0x4005dd <main+39>:	call   0x400480 <read@plt>
+                0x4005e2 <main+44>:	mov    rax,QWORD PTR [rbp-0x10]
+                0x4005e6 <main+48>:	mov    rdi,rax
+                0x4005e9 <main+51>:	call   0x400470 <free@plt>
+                0x4005ee <main+56>:	mov    edi,0x200
+                0x4005f3 <main+61>:	call   0x4004a0 <malloc@plt>
+                0x4005f8 <main+66>:	mov    QWORD PTR [rbp-0x8],rax
+                0x4005fc <main+70>:	mov    rax,QWORD PTR [rbp-0x8]
+                0x400600 <main+74>:	mov    rdi,rax
+                0x400603 <main+77>:	call   0x400470 <free@plt>
+                0x400608 <main+82>:	mov    eax,0x0
+                0x40060d <main+87>:	leave  
+                0x40060e <main+88>:	ret
+            gdb-peda$ b *0x40060e
+            Breakpoint 1 at 0x40060e
+            gdb-peda$ r
+            Starting program: /home/theori/pwn_ex
+        
+            AAAABBBB
+            gdb-peda$ find AAAA
+            Searching for 'AAAA' in: None ranges
+            Found 1 results, display max 1 items:
+            [heap] : 0x602010 ("AAAABBBB\n")
+            
+            gdb-peda$ find 0x42424242
+            Searching for '0x42424242' in: None ranges
+            Found 1 results, display max 1 items:
+            [heap] : 0x602014 --> 0xa42424242 ('BBBB\n')
+
+        "AAAA" 문자열과 0x42424242를 검색해서 어떤 주소에 해당 값이 존재하는지를 찾을 수 있습니다.
+
+    vmmap :
+        프로세스의 메모리 매핑 정보를 확인할 때 info proc maps 명령어를 사용합니다.
+
+        pwngdb에서 지원하는 vmmap 명령어는 기존의 gdb 명령어와 달리 메모리 영역의 권한을 함께 출력하여 줍니다.
+        ex)
+            gdb-peda$ vmmap
+            Start              End                Perm	Name
+            0x00400000         0x00401000         r-xp	/home/theori/pwn_ex
+            0x00600000         0x00601000         r--p	/home/theori/pwn_ex
+            0x00601000         0x00602000         rw-p	/home/theori/pwn_ex
+            0x00602000         0x00623000         rw-p	[heap]
+            0x00007ffff7a0d000 0x00007ffff7bcd000 r-xp	/lib/x86_64-linux-gnu/libc-2.23.so
+            0x00007ffff7bcd000 0x00007ffff7dcd000 ---p	/lib/x86_64-linux-gnu/libc-2.23.so
+            0x00007ffff7dcd000 0x00007ffff7dd1000 r--p	/lib/x86_64-linux-gnu/libc-2.23.so
+            0x00007ffff7dd1000 0x00007ffff7dd3000 rw-p	/lib/x86_64-linux-gnu/libc-2.23.so
+            0x00007ffff7dd3000 0x00007ffff7dd7000 rw-p	mapped
+            0x00007ffff7dd7000 0x00007ffff7dfd000 r-xp	/lib/x86_64-linux-gnu/ld-2.23.so
+            0x00007ffff7fd6000 0x00007ffff7fd9000 rw-p	mapped
+            0x00007ffff7ff7000 0x00007ffff7ffa000 r--p	[vvar]
+            0x00007ffff7ffa000 0x00007ffff7ffc000 r-xp	[vdso]
+            0x00007ffff7ffc000 0x00007ffff7ffd000 r--p	/lib/x86_64-linux-gnu/ld-2.23.so
+            0x00007ffff7ffd000 0x00007ffff7ffe000 rw-p	/lib/x86_64-linux-gnu/ld-2.23.so
+            0x00007ffff7ffe000 0x00007ffff7fff000 rw-p	mapped
+            0x00007ffffffde000 0x00007ffffffff000 rw-p	[stack]
+            0xffffffffff600000 0xffffffffff601000 r-xp	[vsyscall]
+
+        또한 아래와 같이 vmmap 명령어의 인자로 주소를 전달하면 전달한 주소가 어떤 메모리 영역에 위치하는지를 알 수 있습니다.
+        ex)
+            gdb-peda$ vmmap 0x602010
+            Start              End                Perm	Name
+            0x00602000         0x00623000         rw-p	[heap]
+
+    tracemalloc :
+        pwngdb는 동적 할당과 해제 시 강력함을 보여줍니다.
+
+        tracemalloc on 명령어는 malloc 함수와 free 함수의 호출을 후킹해 디버거 화면에 출력하여 줍니다.
+        ex)
+            gdb-peda$ b *main
+            gdb-peda$ r
+            ...
+            ...
+            gdb-peda$ tracemalloc on
+            Breakpoint 2 at 0x7ffff7a8eb80: file malloc.c, line 3349.
+            Breakpoint 3 at 0x7ffff7a8cd50: file malloc.c, line 3841.
+            Breakpoint 4 at 0x7ffff7a8fbd0: file malloc.c, line 4411.
+            Breakpoint 5 at 0x7ffff7a90140: file malloc.c, line 4226.
+            gdb-peda$ c
+            Continuing.
+            AAAA
+            free(0x602010)                 (size = 0x110)
+            malloc(0x200)                  = 0x602010
+            free(0x602010)                 (size = 0x210)
+            [Inferior 1 (process 89751) exited normally]
+            Warning: not running
+
+        malloc과 free 함수가 호출되는 것을 볼 수 있고, 함수의 인자 또한 확인할 수 있습니다.
+
+    parseheap :
+        parseheap 명령어는 할당된 힙 청크의 주소와 크기 등을 출력합니다.
+        ex)
+            gdb-peda$ x/6i main
+                0x4005b6 <main>:	push   rbp
+                0x4005b7 <main+1>:	mov    rbp,rsp
+                0x4005ba <main+4>:	sub    rsp,0x10
+                0x4005be <main+8>:	mov    edi,0x100
+                0x4005c3 <main+13>:	call   0x4004a0 <malloc@plt>
+                0x4005c8 <main+18>:	mov    QWORD PTR [rbp-0x10],rax
+            gdb-peda$ b *0x4005c8
+            Breakpoint 1 at 0x4005c8
+            gdb-peda$ r
+            ...
+            gdb-peda$ parseheap
+            addr                prev                size                 status              fd                bk                
+            0x602000            0x0                 0x110                Used                None              None
+
+        parseheap은 동적 할당과 해제를 자주 사용하는 프로그램에서 유용하게 쓰일 수 있습니다.
+
+    tracecall :
+        tracecall 명령어는 call 명령어로 호출되는 함수와 인자를 출력합니다.
+        ex)
+            gdb-peda$ b *main
+            Breakpoint 1 at 0x4005b6
+            gdb-peda$ r
+            ...
+            gdb-peda$ tracecall
+            Tracing calls match '', Ctrl-C to stop...
+                dep:02 => 0x4005c3 <main+13>:	call   0x4004a0 <malloc@plt>
+                        |-- arg[0]: 0x100 
+                dep:02 => 0x4005dd <main+39>:	call   0x400480 <read@plt>
+                        |-- arg[0]: 0x0 
+                        |-- arg[1]: 0x602010 
+                        |-- arg[2]: 0xff 
+            AAAA
+                dep:02 => 0x4005e9 <main+51>:	call   0x400470 <free@plt>
+                        |-- arg[0]: 0x602010 
+                dep:02 => 0x4005f3 <main+61>:	call   0x4004a0 <malloc@plt>
+                        |-- arg[0]: 0x200 
+                dep:02 => 0x400603 <main+77>:	call   0x400470 <free@plt>
+                        |-- arg[0]: 0x602010 
+            End of execution
+
+        call 명령어로 호출되는 함수의 주소와 인자가 차례대로 출력된 것을 볼 수 있습니다. 
+        해당 명령어는 프로그램의 흐름을 보기 쉽게 나타내줍니다.
+
+    traceinst :
+        traceinst 명령어는 바이너리에서 호출되는 모든 명령어와 오퍼랜드의 값을 출력합니다.
+        ex)
+            gdb-peda$ b *main
+            Breakpoint 1 at 0x4005b6
+            gdb-peda$ r
+            ...
+            gdb-peda$ traceinst
+            Tracing instructions match '.*', Ctrl-C to stop...
+                dep:02 => 0x4005b7 <main+1>:	mov    rbp,rsp
+                        |-- rbp: Cannot access memory address
+                        |-- rsp: 0x7fffffffe5a0 --> 0x400610 (<__libc_csu_init>:	push   r15)
+                dep:02 => 0x4005ba <main+4>:	sub    rsp,0x10
+                        |-- rsp: 0x7fffffffe5a0 --> 0x400610 (<__libc_csu_init>:	push   r15)
+                dep:02 => 0x4005be <main+8>:	mov    edi,0x100
+                        |-- edi: 0x1 
+                dep:02 => 0x4005c3 <main+13>:	call   0x4004a0 <malloc@plt>
+                        |-- arg[0]: 0x100 
+                    dep:03 => 0x4004a0 <malloc@plt>:	jmp    QWORD PTR [rip+0x200b8a]        # 0x601030
+                    dep:03 => 0x4004a6 <malloc@plt+6>:	push   0x3
+                    dep:03 => 0x4004ab <malloc@plt+11>:	jmp    0x400460
+                    dep:03 => 0x400460:	push   QWORD PTR [rip+0x200ba2]        # 0x601008
+                    dep:03 => 0x400466:	jmp    QWORD PTR [rip+0x200ba4]        # 0x601010
+                dep:02 => 0x4005c8 <main+18>:	mov    QWORD PTR [rbp-0x10],rax
+                        |-- QWORD PTR [rbp-0x10]: 0x7fffffffe680 --> 0x1 
+                        |-- rax: 0x602010 
+                dep:02 => 0x4005cc <main+22>:	mov    rax,QWORD PTR [rbp-0x10]
+                        |-- rax: 0x602010 
+                        |-- QWORD PTR [rbp-0x10]: 0x602010 
+                dep:02 => 0x4005d0 <main+26>:	mov    edx,0xff
+                        |-- edx: 0x602010 
+                dep:02 => 0x4005d5 <main+31>:	mov    rsi,rax
+                        |-- rsi: 0x602110 
+                        |-- rax: 0x602010 
+                dep:02 => 0x4005d8 <main+34>:	mov    edi,0x0
+                        |-- edi: 0xf7dd1b20 
+                dep:02 => 0x4005dd <main+39>:	call   0x400480 <read@plt>
+                        |-- arg[0]: 0x0 
+                        |-- arg[1]: 0x602010 
+                        |-- arg[2]: 0xff 
+                    dep:03 => 0x400480 <read@plt>:	jmp    QWORD PTR [rip+0x200b9a]        # 0x601020
+                    dep:03 => 0x400486 <read@plt+6>:	push   0x1
+                    dep:03 => 0x40048b <read@plt+11>:	jmp    0x400460
+                    dep:03 => 0x400460:	push   QWORD PTR [rip+0x200ba2]        # 0x601008
+                    dep:03 => 0x400466:	jmp    QWORD PTR [rip+0x200ba4]        # 0x601010
+            AAAA
+                dep:02 => 0x4005e2 <main+44>:	mov    rax,QWORD PTR [rbp-0x10]
+                        |-- rax: 0x5 
+                        |-- QWORD PTR [rbp-0x10]: 0x602010 
+                dep:02 => 0x4005e6 <main+48>:	mov    rdi,rax
+                        |-- rdi: 0x0 
+                        |-- rax: 0x602010 
+                dep:02 => 0x4005e9 <main+51>:	call   0x400470 <free@plt>
+                        |-- arg[0]: 0x602010 
+                    dep:03 => 0x400470 <free@plt>:	jmp    QWORD PTR [rip+0x200ba2]        # 0x601018
+                    dep:03 => 0x400476 <free@plt+6>:	push   0x0
+                    dep:03 => 0x40047b <free@plt+11>:	jmp    0x400460
+                    dep:03 => 0x400460:	push   QWORD PTR [rip+0x200ba2]        # 0x601008
+                    dep:03 => 0x400466:	jmp    QWORD PTR [rip+0x200ba4]        # 0x601010
+                dep:02 => 0x4005ee <main+56>:	mov    edi,0x200
+                        |-- edi: 0x20000 
+                dep:02 => 0x4005f3 <main+61>:	call   0x4004a0 <malloc@plt>
+                        |-- arg[0]: 0x200 
+                    dep:03 => 0x4004a0 <malloc@plt>:	jmp    QWORD PTR [rip+0x200b8a]        # 0x601030
+                dep:02 => 0x4005f8 <main+66>:	mov    QWORD PTR [rbp-0x8],rax
+                        |-- QWORD PTR [rbp-0x8]: 0x0 
+                        |-- rax: 0x602010 
+                dep:02 => 0x4005fc <main+70>:	mov    rax,QWORD PTR [rbp-0x8]
+                        |-- rax: 0x602010 
+                        |-- QWORD PTR [rbp-0x8]: 0x602010 
+                dep:02 => 0x400600 <main+74>:	mov    rdi,rax
+                        |-- rdi: 0x1 
+                        |-- rax: 0x602010 
+                dep:02 => 0x400603 <main+77>:	call   0x400470 <free@plt>
+                        |-- arg[0]: 0x602010 
+                    dep:03 => 0x400470 <free@plt>:	jmp    QWORD PTR [rip+0x200ba2]        # 0x601018
+                dep:02 => 0x400608 <main+82>:	mov    eax,0x0
+                        |-- eax: 0x1 
+                dep:02 => 0x40060d <main+87>:	leave
+                dep:02 => 0x40060e <main+88>:	ret 
+
+    pwngdb의 사용법은 Heap allocator exploit에서 더욱 자세하게 배울 수 있습니다.
+
+
+
+
+
+
+
+
+
+
+
+
+
+

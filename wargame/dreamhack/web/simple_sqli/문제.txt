@@ -1,0 +1,5 @@
+로그인 서비스입니다.
+SQL INJECTION 취약점을 통해 플래그를 획득하세요. 플래그는 flag.txt, FLAG 변수에 있습니다.
+
+Reference
+Server-side Basic

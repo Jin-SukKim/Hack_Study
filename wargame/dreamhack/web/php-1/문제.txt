@@ -1,0 +1,6 @@
+php로 작성된 Back Office 서비스입니다.
+
+LFI 취약점을 이용해 플래그를 획득하세요. 플래그는 /var/www/uploads/flag.php에 있습니다.
+
+Reference
+Server-side Basic

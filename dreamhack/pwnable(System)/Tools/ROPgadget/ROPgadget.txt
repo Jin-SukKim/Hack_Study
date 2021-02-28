@@ -1,0 +1,91 @@
+ROPgadget :
+    ROPGadget은 바이너리에서 ROP에 필요한 코드 가젯을 찾아주는 도구입니다.
+
+    objdump 등을 통한 디스어셈블리 결과에서 코드 가젯을 찾는 것은 시간이 오래 걸리기 때문에 주로 이러한 도구를 사용합니다.
+
+    설치 방법은 다음과 같습니다.
+    ex)
+        # pip install ropgadget
+
+    다음과 같이 ROPgadget의 경로 탐색을 통해 설치 여부를 확인할 수 있습니다.
+    ex)
+        $ which ROPgadget 
+        /usr/local/bin/ROPgadget
+
+    gadget.c는 pop과 syscall 가젯이 삽입된 예제 코드입니다.
+    ex)
+        // gcc -o gadget gadget.c 
+        void gadget() {
+            asm("pop %rdi");
+            asm("pop %rsi");
+            asm("pop %rdx");
+            asm("pop %rax");
+            asm("ret");
+        }
+        void gadget2() {
+            asm("syscall");
+        }
+        int main()
+        {
+            return 0;
+        }
+
+    ROPgadget의 --binary 옵션을 사용하면 바이너리에서 ROP에 유용한 코드 가젯들을 찾을 수 있습니다.
+    ex)
+        $ ROPgadget --binary ./gadget
+        0x000000000040055c : pop r12 ; pop r13 ; pop r14 ; pop r15 ; ret
+        0x000000000040055e : pop r13 ; pop r14 ; pop r15 ; ret
+        0x0000000000400560 : pop r14 ; pop r15 ; ret
+        0x0000000000400562 : pop r15 ; ret
+        0x00000000004004dd : pop rax ; ret
+        0x00000000004004a2 : pop rbp ; mov byte ptr [rip + 0x200b86], 1 ; ret
+        0x000000000040042f : pop rbp ; mov edi, 0x601030 ; jmp rax
+        0x000000000040055b : pop rbp ; pop r12 ; pop r13 ; pop r14 ; pop r15 ; ret
+        0x000000000040055f : pop rbp ; pop r14 ; pop r15 ; ret
+        0x0000000000400440 : pop rbp ; ret
+        0x00000000004004da : pop rdi ; pop rsi ; pop rdx ; pop rax ; ret
+        0x0000000000400563 : pop rdi ; ret
+        0x00000000004004dc : pop rdx ; pop rax ; ret
+        0x0000000000400561 : pop rsi ; pop r15 ; ret
+        0x00000000004004db : pop rsi ; pop rdx ; pop rax ; ret
+        0x000000000040055d : pop rsp ; pop r13 ; pop r14 ; pop r15 ; ret
+        0x00000000004004ca : push rbp ; mov rbp, rsp ; call rax
+        0x00000000004004d6 : push rbp ; mov rbp, rsp ; pop rdi ; pop rsi ; pop rdx ; pop rax ; ret
+        0x00000000004004e2 : push rbp ; mov rbp, rsp ; syscall
+        0x00000000004003a9 : ret
+        0x00000000004004c7 : sal byte ptr [rcx + rsi*8 + 0x55], 0x48 ; mov ebp, esp ; call rax
+        0x00000000004003a1 : sub eax, dword ptr [rax] ; add byte ptr [rax], al ; add rsp, 8 ; ret
+        0x0000000000400575 : sub esp, 8 ; add rsp, 8 ; ret
+        0x0000000000400574 : sub rsp, 8 ; add rsp, 8 ; ret
+        0x00000000004004e6 : syscall
+
+    ROP 가젯들과 그 주소가 출력된 것을 확인할 수 있습니다.
+    libc.so.6 라이브러리와 같이 코드의 크기가 큰 파일은 코드 가젯이 매우 많습니다.
+    이 때 아래와 같이 --opcode 옵션을 사용하면 원하는 코드 가젯 바이트 코드의 주소를 찾을 수 있습니다.
+    ex)
+        $ ROPgadget --binary ./gadget --opcode "0f05"
+        Opcodes information
+        ============================================================
+        0x00000000004004e6 : 0f05  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

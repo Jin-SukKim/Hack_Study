@@ -1,0 +1,142 @@
+pwngdb :
+    pwngdb는 익스플로잇을 할 때 유용한 명령어를 추가한 gdb 플러그인입니다.
+
+    pwngdb의 설치 방법은 다음과 같습니다.
+    ex)
+        $ git clone https://github.com/longld/peda.git ~/peda
+        $ cd ~/
+        $ git clone https://github.com/scwuaptx/Pwngdb.git
+        $ cp ~/Pwngdb/.gdbinit ~/
+
+    해당 도구는 gdb-peda를 기반으로 동작하는 디버거이기 때문에 먼저 gdb-peda를 설치해야 합니다. 
+    gdb-peda는 gdb 기능을 확장하여 바이너리 분석 및 익스플로잇을 도와주는 플러그인입니다.
+
+    pwngdb는 함수의 디스어셈블리 결과를 보기 쉽게 출력해줄 뿐만 아니라, 
+    명령어가 실행될 때마다 레지스터 상황을 보여주고 함수가 호출될 때 
+    전달되는 인자를 알려주는 등 디버깅에 도움이 되는 수많은 기능이 존재합니다.
+    ex) pwn_ex.c
+        // gcc -o pwn_ex pwn_ex.c
+        #include <stdio.h>
+        #include <stdlib.h>
+        #include <unistd.h>
+        int main()
+        {
+            char *buf = (char *)malloc(256);
+            char *buf2;
+            read(0, buf, 255);
+            free(buf);
+            buf2 = (char *)malloc(512);
+            free(buf2);
+            return 0;
+        }
+
+    gdb를 실행했을 때 아래과 같이 gdb-peda 문자열이 출력되면 정상적으로 설치가 된 것입니다.
+    ex)
+        $ gdb
+        GNU gdb (Ubuntu 7.11.1-0ubuntu1~16.5) 7.11.1
+        Copyright (C) 2016 Free Software Foundation, Inc.
+        License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+        This is free software: you are free to change and redistribute it.
+        There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
+        and "show warranty" for details.
+        This GDB was configured as "x86_64-linux-gnu".
+        Type "show configuration" for configuration details.
+        For bug reporting instructions, please see:
+        <http://www.gnu.org/software/gdb/bugs/>.
+        Find the GDB manual and other documentation resources online at:
+        <http://www.gnu.org/software/gdb/documentation/>.
+        For help, type "help".
+        Type "apropos word" to search for commands related to "word".
+        gdb-peda$ 
+
+    pwngdb에서 바이너리를 실행하면 레지스터 상태와 다음으로 실행될 명령어가 출력되고, 
+    포인터의 경우 포인터가 가리키고 있는 값에 대한 정보를 출력합니다.
+
+    다음은 main 함수에 브레이크포인트를 설정한 후 실행한 결과입니다.
+    ex)
+        $ gdb pwn_ex 
+        gdb-peda$ b *main
+        Breakpoint 1 at 0x4005b6
+        gdb-peda$ r
+        Starting program: pwn_ex 
+        [----------------------------------registers-----------------------------------]
+        RAX: 0x4005b6 (<main>:	push   rbp)
+        RBX: 0x0 
+        RCX: 0x0 
+        RDX: 0x7fffffffe698 --> 0x7fffffffe8c5 ("TERM=xterm-256color")
+        RSI: 0x7fffffffe688 --> 0x7fffffffe8af ("pwn_ex")
+        RDI: 0x1 
+        RBP: 0x400600 (<__libc_csu_init>:	push   r15)
+        RSP: 0x7fffffffe5a8 --> 0x7ffff7a2d830 (<__libc_start_main+240>:	mov    edi,eax)
+        RIP: 0x4005b6 (<main>:	push   rbp)
+        R8 : 0x400670 (<__libc_csu_fini>:	repz ret)
+        R9 : 0x7ffff7de7ac0 (<_dl_fini>:	push   rbp)
+        R10: 0x846 
+        R11: 0x7ffff7a2d740 (<__libc_start_main>:	push   r14)
+        R12: 0x4004c0 (<_start>:	xor    ebp,ebp)
+        R13: 0x7fffffffe680 --> 0x1 
+        R14: 0x0 
+        R15: 0x0
+        EFLAGS: 0x246 (carry PARITY adjust ZERO sign trap INTERRUPT direction overflow)
+        [-------------------------------------code-------------------------------------]
+        0x4005ae <frame_dummy+30>:	call   rax
+        0x4005b0 <frame_dummy+32>:	pop    rbp
+        0x4005b1 <frame_dummy+33>:	jmp    0x400530 <register_tm_clones>
+        => 0x4005b6 <main>:	push   rbp
+        0x4005b7 <main+1>:	mov    rbp,rsp
+        0x4005ba <main+4>:	sub    rsp,0x10
+        0x4005be <main+8>:	mov    edi,0x100
+        0x4005c3 <main+13>:	call   0x4004a0 <malloc@plt>
+        [------------------------------------stack-------------------------------------]
+        0000| 0x7fffffffe5a8 --> 0x7ffff7a2d830 (<__libc_start_main+240>:	mov    edi,eax)
+        0008| 0x7fffffffe5b0 --> 0x1 
+        0016| 0x7fffffffe5b8 --> 0x7fffffffe688 --> 0x7fffffffe8af ("/home/theori/pwn_ex")
+        0024| 0x7fffffffe5c0 --> 0x1f7ffcca0 
+        0032| 0x7fffffffe5c8 --> 0x4005b6 (<main>:	push   rbp)
+        0040| 0x7fffffffe5d0 --> 0x0 
+        0048| 0x7fffffffe5d8 --> 0x26e9925fda81574a 
+        0056| 0x7fffffffe5e0 --> 0x4004c0 (<_start>:	xor    ebp,ebp)
+        [------------------------------------------------------------------------------]
+        Legend: code, data, rodata, value
+
+        Breakpoint 1, 0x00000000004005b6 in main ()
+
+    위는 main 함수에 브레이크포인트가 걸린 시점의 디버깅 화면입니다. 
+    현재 pc를 기준으로 일정 범위의 명령어 또한 출력되어 편하게 디버깅할 수 있습니다.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

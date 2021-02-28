@@ -1,0 +1,5 @@
+기본 설정을 사용한 서비스입니다.
+로그인한 후 Organization에 플래그를 설정해 놓았습니다.
+
+Reference
+Server Side Basic
