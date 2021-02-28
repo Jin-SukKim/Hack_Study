@@ -1,0 +1,56 @@
+DH{89e50fa6fafe2604e33c0ba05843d3df}
+mongo db에 관한 문제이다.
+
+웹사이트에 들어가보면 그냥 text만 간단하게 보여주는 것을 볼 수 있다.
+
+일단 기본적으로 guest란 id와 pw가 존재하는 것을 알 수 있는데 이 guest의 uid를 이용해 로그인을 어떻게 하는지 볼 수 있다.
+
+로그인은 http://host1.dreamhack.games:23342/login?uid=guest&upw=guest 와 같은 형식으로 진행된다.
+여기서 공격가능한 부분은 url이라 mango의 Bug Case 파트를 보면 어떻게 공격해야 하는지 알 수 있다.
+
+http://localhost:3000/?data=1234
+
+이런식으로 url을 통해 공격하면 된다.
+mongo의 Query Operator를 통해 공격하면 된다.
+
+flag가 uid=admin에 있어서 db에서 admin의 패스워드를 알아내야한다.
+
+그런데 코드를 보면 몇가지 필터링 되는 단어들이 있다.
+
+const BAN = ['admin', 'dh', 'admi'];
+
+admin, dh, admi가 필터링 되므로 이 세 단어들은 사용할 수 없다.
+
+그래서 uid[$ne]=guest, $ne = not equal을 이용했고 upw는 upw[$ne]= 를 해보면
+
+http://host1.dreamhack.games:17214/login?uid[$ne]=guest&upw[$ne]= 
+
+admin이라고 화면에 print되는 것을 볼 수 있다.
+이 화면에 admin이라 print되는 걸 이용해 admin의 패스워드를 구하면 된다.
+
+Blind Injection공격인데 $regex, substring등을 이용할 수 있지만 $regex(Regural Expression, 정규표현식)를 이용했다.
+
+그런데 $regex을 이용할 떄 DH는 필터링 되므로 ^DH{, DH{ 와 같이 시작할 수 없다.
+정규표현식은 문자열내에 존재하는 패턴을 찾는 것이므로 꼭 첫부분부터 시작할 필요는 없다.
+
+그냥 { 또는 H{와 같이 시작해도 상관없다.
+또는 DH라는 단어가 필터링 되는 것이므로 정규표현식의 []를 사용하면 DH단어 필터링을 피할 수 있다.
+D[H] 또는 [D]H라고 시작하면 된다.
+
+한번 Blind Injection을 실행 시켜보면
+
+http://host1.dreamhack.games:17214/login?uid[$ne]=guest&upw[$regex]={
+
+화면에 admin이라 print되는 걸 볼 수 있다.
+즉 패스워드를 하나씩 확인 해 볼수 있다.
+
+그런데 flag형식은 {‘uid’: ‘admin’, ‘upw’: ‘DH{32alphanumeric}’}이다.
+즉 32길이의 문자와 숫자의 조합이라 하나하나 직접해 보는 것은 너무 많은 시간이 걸리므로 프로그램을 짜면 편하다.
+
+python을 이용해 코딩을 해봤다.
+
+답 : answer.py
+
+print(f'DH{flag}}}')
+위 프로그램을 실행하면 flag를 획득할 수 있다.
+DH{89e50fa6fafe2604e33c0ba05843d3df}

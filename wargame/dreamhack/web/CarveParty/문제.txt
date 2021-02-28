@@ -1,0 +1,3 @@
+해당 문제는 Dreamhack CTF Season 1 Round #2에 출제된 문제입니다.
+Description
+할로윈 파티를 기념하기 위해 호박을 준비했습니다! 호박을 10000번 클릭하고 플래그를 획득하세요!
