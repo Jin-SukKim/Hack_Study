@@ -1,0 +1,199 @@
+잭 오 랜턴인 호박을 클릭 만번하면 된다.
+
+프로그램을 짜도 되지만 그냥 구글 chrome의 console창에서 간단한 코드를 짜서
+10000번 클릭을 해 완성 시킨후 한번 더 클릭해서 flag를 획득했다.
+
+console에 입력한 코드 :
+
+for(var i=0; i<10001; i++) {
+    $('#jack-target').click();
+}
+
+flag : DH{I_lik3_pumpk1n_pi3}
+
+
+
+
+
+
+
+
+다른 사람 답 :
+
+$(function() {
+  $('#jack-target').click(function () {
+    while (counter <= 10000) {
+      
+      counter += 1;
+      if (counter <= 10000 && counter % 100 == 0) {
+        for (var i = 0; i < pumpkin.length; i++) {
+          pumpkin[i] ^= pie;
+          pie = ((pie ^ 0xff) + (i * 10)) & 0xff;
+        }
+      }
+      
+   }
+    make();
+  });
+});
+
+
+
+
+pumpkin = [ 124, 112, 59, 73, 167, 100, 105, 75, 59, 23, 16, 181, 165, 104, 43, 49, 118, 71, 112, 169, 43, 53 ]
+
+pie = 1
+for i in range(100):
+    for j in range(len(pumpkin)):
+        pumpkin[j] ^= pie
+        pie = ((pie^0xff) + (j*10)) & 0xff
+
+for i in pumpkin:
+    print(chr(i),end='')
+
+
+
+js를 잘 살펴보면 다음과 같은 코드가 있다.
+
+$(function() {
+  $('#jack-target').click(function () {
+    counter += 1;
+    if (counter <= 10000 && counter % 100 == 0) {
+      for (var i = 0; i < pumpkin.length; i++) {
+        pumpkin[i] ^= pie;
+        pie = ((pie ^ 0xff) + (i * 10)) & 0xff;
+      }
+    }
+    make();
+  });
+});
+따라서 직접 클릭을 해도 되지만 귀찮으므로 python 코드를 짜준다.
+
+pumpkin = [ 124, 112, 59, 73, 167, 100, 105, 75, 59, 23, 16, 181, 165, 104, 43, 49, 118, 71, 112, 169, 43, 53 ]
+
+pie = 1
+for i in range(100):
+    for j in range(len(pumpkin)):
+        pumpkin[j] ^= pie
+        pie = ((pie^0xff) + (j*10)) & 0xff
+
+for i in pumpkin:
+    print(chr(i),end='')
+웹해킹을 하나도 할줄 모르지만 해결할 수 있는 쉬운 문제였다.
+
+
+
+
+호박을 10000번 클릭해야되기때문에
+js 를 살펴보고
+
+function a(){for(var i = 0; i < 10000; i++){counter += 1;
+    if (counter <= 10000 && counter % 100 == 0) {
+      for (var i = 0; i < pumpkin.length; i++) {
+        pumpkin[i] ^= pie;
+        pie = ((pie ^ 0xff) + (i * 10)) & 0xff;
+      }
+    }}}
+또는
+
+function b(){for(var j = 0; j < 10000; j++){$('#jack-target').click()}}
+또는
+
+import pyautogui
+
+while True:
+    pyautogui.click()
+로 할수있지만 python 으로 하는건 별로 추천하지않다…
+
+
+
+다른분들꺼 보니 편하게 푸셨네요.
+모르면 손발이 고생한다는 말, 체감했습니다.
+이상태로 100번 연속 클릭…
+
+  $('#jack-target').click(function () {
+    counter += 100;
+    if (counter <= 10000 && counter % 100 == 0) {
+      for (var i = 0; i < pumpkin.length; i++) {
+        pumpkin[i] ^= pie;
+        pie = ((pie ^ 0xff) + (i * 10)) & 0xff;
+      }
+    }
+    make();
+  });
+});
+
+
+
+소스코드 분석을 통해 10000번 클릭을 하는동안 10의 배수일때마다 pumpkin 배열이 변하는것 같아 짜집기하여 로직을 …
+```
+var pumpkin = [ 124, 112, 59, 73, 167, 100, 105, 75, 59, 23, 16, 181, 165, 104, 43, 49, 118, 71, 112, 169, 43, 53 ];
+var pie = 1;
+for (var counter = 0; counter <10000; counter++){
+    if (counter <= 10000 && counter % 100 == 0){
+        for (var i = 0; i < pumpkin.length; i++) {
+                pumpkin[i] ^= pie;
+                pie = ((pie ^ 0xff) + (i * 10)) & 0xff;
+        }
+    }
+
+    txt = pumpkin.map(x=>String.fromCharCode(x)).join('')
+    console.log("plain txt: " + txt)
+}
+
+
+드림핵 풀이 :
+
+Carve Party
+출제된 CTF: Dreamhack CTF Pre-Season Round #2
+분야: Web
+키워드: Javascript
+난이도: ★☆☆☆☆
+배경
+할로윈을 기념하여 초보자도 쉽게 풀 수 있도록 단순히 html 파일에 들어있는 호박 아이콘을 10000번만 클릭하면 풀리도록 제작한 문제입니다. 자바스크립트를 이용해 자동으로 클릭하게 하거나 매크로 작성, 플래그 복호화 루틴 재구현, 직접 10000번 클릭(…) 등의 다양한 방법으로 해결할 수 있도록 의도하였습니다.
+
+분석
+해당 html 파일의 자바스크립트 동작 방식을 분석해보면 호박 아이콘을 클릭할 때마다 counter가 1씩 증가함을 알 수 있습니다.
+
+$(function() {
+  $('#jack-target').click(function () {
+    counter += 1;   // 여기서 증가합니다.
+    if (counter <= 10000 && counter % 100 == 0) {
+      for (var i = 0; i < pumpkin.length; i++) {
+        pumpkin[i] ^= pie;
+        pie = ((pie ^ 0xff) + (i * 10)) & 0xff;
+      }
+    }
+    make();
+  });
+}
+바로 아래 조건문에서 counter가 10000 보다 작고, 100 으로 나누어 떨어질 때마다 미리 초기화 되어있던 pumpkin과 pie 값을 이용해 pumpkin을 복호화 합니다.
+그리고 카운터 증가 후 호출하는 make 함수 내부를 보면 counter가 10000 보다 클 때 진입하게 되는 제어문이 존재합니다.
+
+// make 함수 내부
+if (10000 < counter) {
+  $('#jack-target').addClass('tada');
+  var ctx = document.querySelector("canvas").getContext("2d"),
+  dashLen = 220, dashOffset = dashLen, speed = 20,
+  txt = pumpkin.map(x=>String.fromCharCode(x)).join(''), x = 30, i = 0;
+
+  ...
+}
+복호화가 완료된 pumpkin을 문자열로 변경한 후 출력하는 루틴임을 확인할 수 있습니다.
+
+풀이
+해당 문제를 풀이하기 위해 가장 의도된 방법은 자바스크립트 콘솔 상에서 호박 아이콘이 클릭되었을 때 호출되는 핸들러를 반복문을 이용해 자동으로 호출하도록 하는 것입니다.
+위 분석 파트에서 보았듯이 호박 아이콘이 클릭될 때마다 $('#jack-target').click 핸들러가 호출됩니다. 이를 자바스크립트 상에서 호출함으로써 직접 클릭하지 않고 10000번의 클릭 횟수를 채우는 것이 가능합니다.
+
+for (var i = 0; i < 10000; i++)
+    $('#jack-target').click();
+혹은 플래그가 복호화되는 루틴을 자바스크립트나 파이썬 상에서 재구현해 플래그만 따로 복구하는 방법이 존재합니다.
+
+pumpkin = [ 124, 112, 59, 73, 167, 100, 105, 75, 59, 23, 16, 181, 165, 104, 43, 49, 118, 71, 112, 169, 43, 53 ]
+pie = 1
+
+for state in range(100):
+    for i in range(len(pumpkin)):
+        pumpkin[i] ^= pie
+        pie = ((pie ^ 0xff) + (i * 10)) & 0xff
+print ''.join(map(chr, pumpkin))
