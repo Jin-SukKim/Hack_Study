@@ -1,0 +1,80 @@
+ifconfig : ip address 확인
+
+etc/service : 포트/프로토콜 정보를 확인
+
+top : cpu, 메모리 사용정보
+
+man : 명령어 설명 보기. 도움말, 메뉴얼 확인
+
+find : 파일이나 파일을 찾는데 쓰는 명령어
+
+df : 현재 설치된 하드디스크와 용량을 확인하는 명령어
+
+pwd : 현재 위치 확인
+
+netstat : 네트워크 연결 상태와 라우팅 테이블 정보가 있는 dos 창
+    TCP/IP 연결과 프로토콜의 연결 상태를 확인한다
+
+chmod : 권한설정 명령어. 모든 접근 권한 설정 명령어
+    w = 4, r = 2, x = 1
+    w + r + x = 7
+    d: 디렉토리
+    b : 블록타입 특수 파일
+    c : 문자타입 특수 파일
+    l : 심볼릭 링크
+    p : 파이프
+    s : 소켓 
+    - : 일반 파일
+
+chown : 파일이나 디렉터리의 소유권 변경
+    ex) chown aaa test : test 란 파일의 소유권을 aaa로 변경
+    ex) chown nobody.ftp test : test란 파일의 소유자를 nobody로, 소유그룹을 ftp로 변경
+
+useradd : 유저 등록, 생성
+
+passwd : 사용자 암호를 설정
+
+userdel : 사용자 계정 /etc/passwd 파일에서 삭제
+    한 번 삭제한 계정을 다시 등록하면 UID 값이 달라져 다른 사용자로 인식
+
+usermod : 사용자 모드를 수정
+
+groupadd : 그룹을 등록하면 etc/group 파일에 그룹이 생성
+
+groupdel : 특정 그룹을 삭제
+
+ping : 원격 호스트와 연결상태 진단. 연결상태, 속도, 손실율 등 체크
+
+nslookup : DNS의 설정 상태를 조회하거나 진단. 네임 서버에서 도메인 이름이나 IP 조회
+
+set query = soa or na : SOA 레코드나 NS들 조회
+
+arp : ARP Cache Table 확인
+
+traceroute : ICMP 프로토콜 이옹해 패킷이 거쳐가는 라우팅 경로 확인
+    - 특정 서버 경로 출력
+
+file : 파일 종류를 알려준다
+
+finger : 특정 사용자 정보를 출력 (사용자 명/홈 디렉터리)
+
+rmdir : 해당 디렉터리 삭제
+
+su : 스위치 유저. root 계정 로그인을 위해 주로 사용
+    su root
+
+touch : 0 Byte의 빈 파일을 생성하거나 최근 파일 사용/변경 시간  변경
+
+wall : TELNET이나 콘솔로 로그인된 모든 사용자에게 메시지를 전송
+
+w, who : 현재 시스템에 접속한 사용자 정보와 프로세스 상태를 확인한다.
+
+which : 파일이나 명령어가 존재하는 디렉터리를 보여준다
+
+wrtie : 특정사용자에게 메시지를 보낸다.
+
+history -c : 히스토리 전부 지우기
+
+
+
+

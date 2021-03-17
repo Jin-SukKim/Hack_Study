@@ -1,0 +1,208 @@
+System Call 종류
+
+⊙ 프로세스 와 관련된 시스템 호출
+	- 프로세스 제어용
+
+⊙ exec : 자신을 수행 가능한 다른 프로세스로 대치 수행
+
+⊙ fork : 현재의 프로세스 이미지를 복사하고 child 프로세스를 만듬
+
+⊙ wait
+- pipe : 파이프
+- signal : 소프트웨어 인터럽트 또는 시그널
+- exit : 프로세스 종료
+- getuid, setuid ... : 사용자 및 그룹 id 접근
+
+⊙ 표준 화일 (장치)에 대한 입출력 시스템 호출
+- open( ), create( ), close( ), read( ), write( ), lseek( ), ...
+
+⊙ 소켓 기반의 입출력 시스템 호출
+- socket( ), bind( ), listen( ), accept( ), connect( ), ...
+
+System Call
+
+번호	함수 이름	설명	소스
+1	exit( )	현재 프로세스의 종료	kernel/exit.c
+2	fork( )	자식 프로세스의 생성	arch/i385/kernel/process.c
+3	read( )	파일 지정자로 부터 읽기	fs/read_write.c
+4	write( )	파일 지정자로 쓰기	fs/read_write.c
+5	open( )	파일이나 장치열기	fs/open
+6	close( )	파일 지정자 닫기	fs/open.c
+7	waitpid( )	프로세스의 종료를 기다린다	kernel/exit.c
+8	creat( )	파일이나 장치의 생성	fs/open.c
+9	link( )	파일을 위한 새로운 이름 만들기	fs/namei.c
+10	unlink( )	파일 혹은 참조된 이름을 삭제한다	fs/namei.c
+11	execv( )	프로그램의 실행	arch/i386/kernel/process.c
+12	chdir( )	작업디렉토리의 변경	fs/open.c
+13	time( )	초단위의 시간 얻기	kernel/time.h
+14	mknod( )	일반 혹은 특수파일의 생성	fs/namei.c
+15	chmod( )	파일의 권한 바구기	fs/open.c
+16	chown( )	파일의 소유자 변경	fs/open.c
+18	stat( )	파일의 상태 얻기	fs/stat.c
+19	lseek( )	파일에서의 위치 변경	fs/read_write.c
+20	getpid( )	프로세스의 ID를 얻어온다	kernel/sched.c
+21	mount( )	파일 시스템의 마운트	fs/super.c
+22	umount( )파일 시스템 마운트 해제	fs/super.c
+23	setuid( )	실제 유저 아이디 설정	kernel/sys.c
+24	getuid( )	실제 유저 아이디 얻어오기	kernel/sched.c
+25	stime( )	시스템의 시간과 날짜 설정	kernel/time.c
+26	ptrace( )	부모프로세스가 자식프로세스의 실행을 제어하도록 허가	arch/i386/kernel/ptrace.c
+27	alarm( )	실정시간후 alarm시그널이 전달되도록 한다.	kernel/sched.c
+28	fstat( )	파일 상태 얻기	fs/stat.c
+29	pause( )	시그널이 전달될때까지 대기한다.	arch/i386/kernel/sys_i386.c
+30	utime( )	파일의 엑세스시간과 수정시간을 수정한다.	fs/open.c
+33	access( )	파일의 권한을 검사한다.	fs/open.c
+34	nice( )	프로세스의 우선순위를 번경한다.	kernel/sched.c
+36	sync( )	슈퍼블럭을 업데이트 한다.	fs/buffer.c
+37	kill( )	프로세스에 시그널을 전송한다.	kernel/signal.h
+38	rename( )	파일의 이름과 위치를 변경한다.	fs/namei.c
+39	mkdir( )	디렉토리를 생성한다.	fs/namei.c
+40	rmdir( )	디렉토리를 제거한다.	fs/namei.c
+41	dup( )	열린 파일 지정자를 복사한다.	fs/fcntl.c
+42	pipe( )	내부통신을 위한 채널을 생성한다.	arch/i386/kernel/sys_i386.c
+43	times( )	프로세스 시간을 얻는다.	kernel/sys.c
+45	brk( )	프로세스의 데이터 세그먼트 크기를 변경한다.	mm/mmap.c
+46	setgid( )	real 그룹 아이디를 설정한다.	kernel/sys.c
+47	getgid( )	real 그룹 아이디를 얻어온다.	kernel/sched.c
+48	sys_signal( )	ANSI C 시그널 제어	kernel/signal.c
+49	geteuid( )	effective 유저 아이디 가져오기	kernel/sched.c
+50	getegid( )	effective 그룹 아이디 가져오기	kernel/sched.c
+51	acct( )	프로세스 측정을 켜거나 끈다.	kernel/acct.c
+52	umount2( )	파일시스템 unmount	fs/super.c
+54	ioctl( )	장치 제어	fs/ioctl.c
+55	fcntl( )	파일 제어	fs/fcntl.c
+56	mpx	사용되지 않음
+57	setpgid( )	프로세스의 그룹 아이디 설정	kernel/sys.c
+58	ulimit( )	사용되지 않음
+59	olduname	구식의 uname 시스템콜	arch/i386/kernel/sys_i386.c
+60	umaks( )	파일 마스크의 생성	kernel/sys.c
+61	chroot( )	루트디렉토리의 변경	fs/open.c
+62	ustat( )	파일시스템의 통계 얻기	fs/super.c
+63	dup2( )	파일 지정자 복사	fs/fcntl.c
+64	getppid( )	부모 프로세스의 PID 얻기	kernel/sched.c
+65	getpgrp( )	프로세스의 그룹 아이디 얻기	kernel/sys.c
+66	setsid( )	세션과 프로세스 그룹 아이디 설정	kernel/sys.c
+67	sigaction( )	POSIX 시그널 제어 함수	arch/i386/kernel/signal.c
+68	sigmask( )	ANSI C 시그널 제어	kernel/signal.c
+69	ssetmask( )	ANSI C 시그널 제어	kernel/signal.c
+70	setreuid( )	실제 혹은 유효사용자 아이디의 설정	kernel/sys.c
+71	setregid( )	실제 혹은 유효그룹 아이디의 설정	kernel/sys.c
+72	sigsuspend( )	시그널 마스크를 일시적으로 대체한후 시그널을 기다린다.	arch/i386/kernel/signal.c
+73	sigpending( )	시그널을 블럭하고 검사를 수행한다.	kernel/signal.c
+74	sethostname( )	호스트이름 설정	kernel/sys.c
+75	setrlimit( )	자원의 제한값을 설정한다.	kernel/sys.c
+76	getrlimit( )	자원의 제한값을 얻어온다.	kernel/sys.c
+77	getrusage( )	자원의 제한값을 얻어온다.	kernel/sys.c
+78	gettimeofday( )	날짜와 시간을 얻는다.	kernel/time.c
+79	settimeofday( )	날짜와 시간을 설정한다.	kernel/time.c
+80	getgroups( )	포함된 그룹아이디의 목록을 얻는다.	kernel/sys.c
+81	setgroups( )	포함될 르룹아이디의 목록을 설정한다.	kernel/sys.c
+82	old_select( )	오래된 버젼의 입출력다중화	arch/i386/kernel/sys_i386.c
+83	symlink( )	파일에 대한 심볼릭링크 생성	fs/namei.c
+84	lstat( )		파일의 상태 얻기	fs/stat.c
+85	readlink( )	심볼릭 링크의 연결된 파일 이름을 읽는다.	fs/stat.c
+86	uselib( )		공유라이브를 선택한다.	fs/exec.c
+87	swapon( )	파일과 장치의 스와핑을 시작한다.	mm/swapfile.c
+88	reboot( )	리붓 시키거나 Ctrl-Alt-Del을 활성화/비활성화 시킨다.	kernel/sys.c
+89	old_readdir( )	오래된 버젼의 디렉토리 내용읽기	fs/readdir.c
+90	old_mmap( )	오래된 버젼의 메모리 파일 대응	arch/i386/kernel/sys/i386.c
+91	mnunmap( )	메모리 페이지 해제	mm/mmap.c
+92	truncate( )	파일의 길이 결정	fs/open.c
+93	ftruncate( ) 	파일의 길이 결정	fs/open.c
+94	fchmod( )	파일의 권한 변경	fs/open.c
+95	fchown( )	파일의 그룹및 소유자 변경	fs/open.c
+96	getpriority( )	프로그램의 우선순위 얻어오기	kernel/sys.c
+97	setpriority( )	프로그램의 우선순위 설정	kernel/sys.c
+98	profile( )	execution time profile
+99	statfs( )	파일시스템 정보 얻기	fs/open.c
+100	fstatfs( )	파일시스템 정보 얻기	fs/open.c
+101	ioperm( )	set port input/output permissions	arch/i386/kernel/ioport.c
+102	socketcall( )	소켓 시스템콜	net/socket.c
+103	syslog( )		커널 메시지 버퍼의 내용을 읽거나 클리어한다.	kerne/printk.c
+104	setitimer( )	내부 타이머 설정	kernel/itimer.c
+105	getitimer(  )	내부 타이머 값 가져오기	kernel/itimer.c
+106	sys_newstat( )	파일의 상태 얻기	fs/stat.c
+107	sys_newlstat( )	파일의 상태 얻기	fs/stat.c
+108	sys_newfstat( )	파일의 상태 얻기	fs/stat.c
+109	olduname( )	최근 커널의 정보얻기	arch/i386/kernel/sys_i386.c
+110	iopl( )		I/O privilege 레벨 변경	arch/i386/kernel/ioport.c
+111	vhangup( )	가상으로 현재 tty를 중지시킨다.	fs/open.c
+112	idle( )		0번 프로세스를 idel상태로 한다.	arch/i386/kernel/process.c
+113	vm86old( )	가상 8086모드로 들어가기	arch/i386/kernel/vm86.c
+114	wait4( )		프로세스의 종료를 기다린다. BSD 스타일	kernelk/exit.c
+115	swapoff( )	파일/장치의 스와핑 끝내기	mm/swapfile.c
+116	sysinfo( )		시스템의 정보 얻어오기	kernel/info.c
+117	ipc( )		System V IPC 시스템 콜	arch/i386/kernelk/sys_i386.c
+118	fsync( )		파일의 내부상태와 디스크상의 상태를 동기화 한다.	fs/buffer.c
+119	sigreturn( )	시그널 핸들러와 클린업 스택 프레임으로 부터 반환	arch/i386/kernel/signal.c
+120	clone( )		자식 프로세스의 생성	arch/i386/kernel/process.c
+121	setdomainname( )	도메인 이름 설정	kernel/sys.c
+122	uname( )		최근 커널의 정보 얻어오기	kernel/sys.c
+123	modify_ldt( )	ldt를 가져오거나 설정한다.	arch/i386/kernel/ldt.c
+124	adjtmex( )	커널 클럭을 조율한다.	kernel/time.c
+125	mprotect( )	메모리 영역에 대한 접근을 제어한다.	mm/mprotect.c
+126	sigprocmask( )	POSIX 시그널 제어 관련 함수	kernel/signal.c
+127	create_module( )	적재가능한 모듈엔트리 생성	kernel/module.c
+128	init_module( )	적재가능한 모듈 엔트리 초기화	kernelk/module.c
+129	delete_module( )	적재 모듈의 삭제	kernel/module.c
+130	get_kernel_syms( )	retrieve exported kernel and module symbols	kernel/module.c
+131	quotactl( )	디스크 쿼터 수정	fs/dquot.c
+132	getpgid( )	프로세스 그룹아이디 가져오기	kernel/sys.c
+133	fchdir( )		작업 디렉토리 변경	fs/open.c
+134	bdflush( )	start, flush, buffer-dirty-flush 데몬을 조정한다	fs/buffer.c
+135	sysfs( )		파일시스템 타입정보 가져오기	fs/super.c
+136	personality( )	프로세스 실행 도메인 설정	kernel/exec_domain.c
+137	afs_syscall( )	사용하지 않음
+138	setfsuid( )	파일 시스템 검사를 위해 사용되는 사용자 실별자를 설정	kernel/sys.c
+139	setfsgid( )	파일 시스템 검사를 위해 사용되는 그룹 식별자를 설정
+140	sys_llseek( )	읽기/쓰기 파일의 위치 이동	fs/read_write.c
+141	getdents( )	디렉토리 내용을 읽어들인다.	fs/readdir.c
+142	select( )		입출력 다중화	fs/select.c
+143	flock( )		열린파일에 대한 권고잠금 적용및 제거	fs/locks.c
+144	msync( )		메모리 맵과 파일의 동기화	mm/filemap.c
+145	readv( )		벡터를 읽는다	fs/read_write.c
+146	writev( )		벡터를 쓴다	fs/read_write.c
+147	sys_getsid( )	세션리더의 프로세스 아이디를 가져온다	kernel/sys.c
+148	fdatasync( )	파일의 디스크에 있는 in-core 데이터를 동기화	fs/buffer.c
+149	sysctl( )		시스템 파라메터를 읽고 쓴다
+150	mlock( )		메모리의 페이지 잠금	mm/mlock.c
+151	munlock( )	메모리의 페이지 잠금 풀기	mm/mlock.c
+152	mlockall( )	호출한 프로세스의 페이징을 금지시킨다	mm/mlock.c
+153	munlockall( )	호출한 프로세스에 대한 페이징을 다시 가능하도록 한다.	mm/mlock.c
+154	sched_setparam( )	스케줄 파라메터 설정	kernel/sched.c
+155	sched_getparam( ) 	스케쥴 파라메터 설정값 가져오기	kernel/sched.c
+156	sched_setscheduler( )	스케쥴 알고리즘 파라메터 설정	kernel/sched.c
+157	sched_getscheduler( )	스케쥴 알고리즘 파라메터 값 가져오기	kernel/sched.c
+158	sched_yield( )	kernel/sched.c
+159	sched_get_priority_max( )	정적 선행 범위를 가진다	kernel/sched.c
+160	sched_get_priority_mix( )	kernel/sched.c
+161	sched_rr_get_interval( )	프로세스의 SCHED_RR간격을 가져온다.	kernel/sched.c
+162	nanosleep( )		지정한 시간에 실행을 잠시 멈춘다	kernel/sched.c
+163	mremap( )		가상 메모리 주소를 재대응시킨다	mm/mremap.c
+164	setresuid( )		set real, effective and saved user or group ID	kernel/sys.c
+165	getresuid( )		get real, effective and saved user or group ID	kernel/sys.c
+166	vm86( )			8086가상 모드로 진입	arch/i386/kernel/vm86.c
+167	query_module( )		query the kernel for various bits pertaining to modules	kernel/module.c
+168	poll( )			파일 지정자로 부터 이벤트를 기다린다	fs/select.c
+169	nfsservctl( )		커널 nfs 데몬을 위한 인터페이스	fs/filesystems.c
+170	setresgid( )		set real, effective and saved user or group ID	kernel/sys.c
+171	getresgid( )		get real, effective and saved user or group ID	kernel/sys.c
+172	prctl( )			프로세스상에서의 실행	kernel/sys.c
+173	rt_sigreturn		arch/i386/kernel/signal.c
+174	rt_sigaction		kernel/signal.c
+175	rt_sigprocmask		kernel/signal.c
+176	rt_sigpending		kernel/signal.c
+177	rt_sigtimedwait		kernel/signal.c
+178	rt_sigqueueinfo		kernel/signal.c
+179	rt_sigsuspend		arch/i386/kernel/signal.c
+180	pread( )			파일 지정자로 부터 위치를 가져오거나 읽는다	fs/read_write.c
+181	sys_pwrite( )		파일 지정자로 부터 위치를 가져오거나 쓴다	fs/read_write.c
+182	chown( )			파일 소유자 변경	fs/open.c
+183	getcwd( )		최근 작업 디렉토리 가져오기	fs/dcache.c
+184	capget( )		프로세스 기능의 설정값 가져오기	kernel/capability.c
+185	capset		프로세스 기능 설정하기	kernle/capability.c
+186	sigaltstack( )	시그널 스택 문맥을 가져오가나 설정	arch/i386/kernel/signal.c
+187	sendfile( )	파일 지정자 사이의 데이터 교환	mm/filemap.c
+188	getpmsg( )	사용하지 않음
+189	putpmsg( )	사용하지 않음
+190	vfork( )		자식 프로세스 생성과 부모 프로세스 블럭	arch/i386/kernel/process.c
