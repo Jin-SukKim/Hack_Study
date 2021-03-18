@@ -1,0 +1,3 @@
+sudo dpkg-reconfigure locales : 언어 설정 변경
+
+
