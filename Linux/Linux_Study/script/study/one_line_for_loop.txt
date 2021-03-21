@@ -1,14 +1,11 @@
 iplist.txt에 여러 ip 주소가 있다고 가정
 예)  
-    192.168.1.65
-    192.168.1.70
-    192.168.1.75
-    192.168.1.84
-    192.168.1.62
-    192.168.1.254
+    192.168.24.2
+    192.168.24.131
+
 
 shell에서 for loop 한줄로 nmap 출력
 
-root@test:~# for ip in $(cat iplist.txt); do nmap -sS -p 80 -T4 $ip & done
+root@test:~# for ip in $(cat iplist.txt); do nmap -p 80 -T4 $ip & done
 or
-root@test:~# for ip in $(cat iplist.txt); do nmap -sS -p 80 -T4 $ip ; done
+root@test:~# for ip in $(cat iplist.txt); do nmap -p 80 -T4 $ip ; done
